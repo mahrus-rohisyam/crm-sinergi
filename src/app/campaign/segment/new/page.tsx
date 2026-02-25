@@ -1,0 +1,1006 @@
+"use client";
+
+import { AppShell } from "@/components/layout/AppShell";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { MultiSelect } from "@/components/ui/MultiSelect";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+
+// ─── Types ────────────────────────────────────────────────
+
+type FilterType =
+  | "brand"
+  | "transaction"
+  | "timeframe"
+  | "demographics"
+  | "engagement_customer"
+  | "engagement_management";
+
+type FilterModule = {
+  id: string;
+  type: FilterType;
+  connector: "AND" | "OR";
+  config: Record<string, unknown>;
+};
+
+type AudiencePreview = {
+  matchingCount: number;
+  totalCount: number;
+  percentage: number;
+  customers: Array<{
+    customerName: string;
+    phoneNumber: string;
+    lastPurchase: string;
+    status: string; // added status for UI dots
+  }>;
+};
+
+type AppSettingsData = {
+  currency: string;
+  currencySymbol: string;
+  marketingCostPerCustomer: number;
+};
+
+type FilterOptions = {
+  brands: string[];
+  provinces: string[];
+  cities: string[];
+  districts: string[];
+  csNames: string[];
+  leadSources: string[];
+  customerTypes: string[];
+  expeditions: string[];
+  transactionTypes: string[];
+};
+
+// ─── Filter Definitions ───────────────────────────────────
+
+const FILTER_DEFS: Record<
+  FilterType,
+  { label: string; description: string; iconBg: string; iconColor: string }
+> = {
+  brand: {
+    label: "Brand",
+    description: "Filter berdasarkan brand",
+    iconBg: "bg-blue-50",
+    iconColor: "text-blue-600",
+  },
+  transaction: {
+    label: "Historical Transaction",
+    description: "SKU, qty, jumlah, tipe transaksi, ekspedisi",
+    iconBg: "bg-emerald-50",
+    iconColor: "text-emerald-600",
+  },
+  timeframe: {
+    label: "Timeframe",
+    description: "Tanggal input & tanggal pengiriman",
+    iconBg: "bg-indigo-50",
+    iconColor: "text-indigo-600",
+  },
+  demographics: {
+    label: "Demographics",
+    description: "Nama, No HP, provinsi, kota, kecamatan",
+    iconBg: "bg-purple-50",
+    iconColor: "text-purple-600",
+  },
+  engagement_customer: {
+    label: "Engagement — Customer History",
+    description: "Order frequency & jenis customer",
+    iconBg: "bg-amber-50",
+    iconColor: "text-amber-600",
+  },
+  engagement_management: {
+    label: "Engagement — Management",
+    description: "Nama CS & sumber leads",
+    iconBg: "bg-rose-50",
+    iconColor: "text-rose-600",
+  },
+};
+
+// ─── Icons ────────────────────────────────────────────────
+
+function BrandIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+      <line x1="7" y1="7" x2="7.01" y2="7" />
+    </svg>
+  );
+}
+function TransactionIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="18" rx="2" />
+      <path d="M8 7h8M8 11h8M8 15h4" />
+    </svg>
+  );
+}
+function TimeframeIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  );
+}
+function DemographicsIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  );
+}
+function EngagementCustomerIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+function EngagementManagementIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+function CloseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+function PlusCircleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="16" />
+      <line x1="8" y1="12" x2="16" y2="12" />
+    </svg>
+  );
+}
+function InfoIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="12" />
+      <line x1="12" y1="8" x2="12.01" y2="8" />
+    </svg>
+  );
+}
+
+const FILTER_ICONS: Record<FilterType, () => React.ReactNode> = {
+  brand: BrandIcon,
+  transaction: TransactionIcon,
+  timeframe: TimeframeIcon,
+  demographics: DemographicsIcon,
+  engagement_customer: EngagementCustomerIcon,
+  engagement_management: EngagementManagementIcon,
+};
+
+// ─── Helpers ──────────────────────────────────────────────
+
+let _idCounter = 0;
+function genId() {
+  return `filter_${Date.now()}_${++_idCounter}`;
+}
+
+function fmtCurrency(amount: number, symbol: string) {
+  return `${symbol} ${amount.toLocaleString("id-ID")}`;
+}
+
+// ─── Filter Config Forms ──────────────────────────────────
+
+type FilterFormProps = {
+  config: Record<string, unknown>;
+  onChange: (c: Record<string, unknown>) => void;
+  options: FilterOptions;
+  settings: AppSettingsData;
+};
+
+function BrandFilterForm({ config, onChange, options }: FilterFormProps) {
+  const brands = (config.brands as string[]) || [];
+  return (
+    <div>
+      <label className="filter-label">Brand</label>
+      <MultiSelect
+        options={options.brands}
+        selected={brands}
+        onChange={(v) => onChange({ ...config, brands: v })}
+        placeholder="Pilih brand..."
+      />
+    </div>
+  );
+}
+
+function TransactionFilterForm({ config, onChange, options, settings }: FilterFormProps) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <label className="filter-label">SKU</label>
+        <MultiSelect
+          options={[]} // SKUs are free-text
+          selected={(config.skus as string[]) || []}
+          onChange={(v) => onChange({ ...config, skus: v.length > 0 ? v : undefined })}
+          placeholder="Ketik SKU lalu Enter..."
+          allowCustom
+        />
+      </div>
+      <div>
+        <label className="filter-label">Min Qty</label>
+        <input
+          type="number"
+          min={0}
+          value={(config.minQty as string) || ""}
+          onChange={(e) => onChange({ ...config, minQty: e.target.value || undefined })}
+          placeholder="0"
+          className="filter-input"
+        />
+      </div>
+      <div>
+        <label className="filter-label">Max Qty</label>
+        <input
+          type="number"
+          min={0}
+          value={(config.maxQty as string) || ""}
+          onChange={(e) => onChange({ ...config, maxQty: e.target.value || undefined })}
+          placeholder="∞"
+          className="filter-input"
+        />
+      </div>
+      <div>
+        <label className="filter-label">Min Amount ({settings.currencySymbol})</label>
+        <input
+          type="number"
+          min={0}
+          value={(config.minAmount as string) || ""}
+          onChange={(e) => onChange({ ...config, minAmount: e.target.value || undefined })}
+          placeholder={`${settings.currencySymbol} 0`}
+          className="filter-input"
+        />
+      </div>
+      <div>
+        <label className="filter-label">Max Amount ({settings.currencySymbol})</label>
+        <input
+          type="number"
+          min={0}
+          value={(config.maxAmount as string) || ""}
+          onChange={(e) => onChange({ ...config, maxAmount: e.target.value || undefined })}
+          placeholder="∞"
+          className="filter-input"
+        />
+      </div>
+      <div>
+        <label className="filter-label">Jenis Transaksi</label>
+        <select
+          value={(config.transactionType as string) || ""}
+          onChange={(e) => onChange({ ...config, transactionType: e.target.value || undefined })}
+          className="filter-input"
+        >
+          <option value="">Semua</option>
+          {options.transactionTypes.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="filter-label">Ekspedisi</label>
+        <MultiSelect
+          options={options.expeditions}
+          selected={(config.expeditions as string[]) || []}
+          onChange={(v) => onChange({ ...config, expeditions: v.length > 0 ? v : undefined })}
+          placeholder="Pilih ekspedisi..."
+          allowCustom
+        />
+      </div>
+    </div>
+  );
+}
+
+function TimeframeFilterForm({ config, onChange }: FilterFormProps) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label className="filter-label">Tanggal Input (dari)</label>
+        <input
+          type="date"
+          value={(config.inputDateStart as string) || ""}
+          onChange={(e) => onChange({ ...config, inputDateStart: e.target.value || undefined })}
+          className="filter-input"
+        />
+      </div>
+      <div>
+        <label className="filter-label">Tanggal Input (sampai)</label>
+        <input
+          type="date"
+          value={(config.inputDateEnd as string) || ""}
+          onChange={(e) => onChange({ ...config, inputDateEnd: e.target.value || undefined })}
+          className="filter-input"
+        />
+      </div>
+      <div>
+        <label className="filter-label">Tanggal Pengiriman (dari)</label>
+        <input
+          type="date"
+          value={(config.shippingDateStart as string) || ""}
+          onChange={(e) => onChange({ ...config, shippingDateStart: e.target.value || undefined })}
+          className="filter-input"
+        />
+      </div>
+      <div>
+        <label className="filter-label">Tanggal Pengiriman (sampai)</label>
+        <input
+          type="date"
+          value={(config.shippingDateEnd as string) || ""}
+          onChange={(e) => onChange({ ...config, shippingDateEnd: e.target.value || undefined })}
+          className="filter-input"
+        />
+      </div>
+    </div>
+  );
+}
+
+function DemographicsFilterForm({ config, onChange, options }: FilterFormProps) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label className="filter-label">Nama Customer</label>
+        <input
+          type="text"
+          value={(config.customerName as string) || ""}
+          onChange={(e) => onChange({ ...config, customerName: e.target.value || undefined })}
+          placeholder="Cari nama..."
+          className="filter-input"
+        />
+      </div>
+      <div>
+        <label className="filter-label">No HP / WhatsApp</label>
+        <input
+          type="text"
+          value={(config.phoneNumber as string) || ""}
+          onChange={(e) => onChange({ ...config, phoneNumber: e.target.value || undefined })}
+          placeholder="628xx..."
+          className="filter-input"
+        />
+      </div>
+      <div className="sm:col-span-2">
+        <label className="filter-label">Provinsi</label>
+        <MultiSelect
+          options={options.provinces}
+          selected={(config.provinces as string[]) || []}
+          onChange={(v) => onChange({ ...config, provinces: v.length > 0 ? v : undefined })}
+          placeholder="Pilih provinsi..."
+        />
+      </div>
+      <div className="sm:col-span-2">
+        <label className="filter-label">Kota / Kabupaten</label>
+        <MultiSelect
+          options={options.cities}
+          selected={(config.cities as string[]) || []}
+          onChange={(v) => onChange({ ...config, cities: v.length > 0 ? v : undefined })}
+          placeholder="Pilih kota..."
+          allowCustom
+        />
+      </div>
+      <div className="sm:col-span-2">
+        <label className="filter-label">Kecamatan</label>
+        <MultiSelect
+          options={options.districts}
+          selected={(config.districts as string[]) || []}
+          onChange={(v) => onChange({ ...config, districts: v.length > 0 ? v : undefined })}
+          placeholder="Pilih kecamatan..."
+          allowCustom
+        />
+      </div>
+    </div>
+  );
+}
+
+function EngagementCustomerFilterForm({ config, onChange, options }: FilterFormProps) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="filter-label">Jenis Customer</label>
+        <MultiSelect
+          options={options.customerTypes}
+          selected={(config.customerTypes as string[]) || []}
+          onChange={(v) => onChange({ ...config, customerTypes: v.length > 0 ? v : undefined })}
+          placeholder="Pilih jenis customer..."
+        />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="filter-label">Min Order Frequency</label>
+          <input
+            type="number"
+            min={0}
+            value={(config.minOrderFrequency as string) || ""}
+            onChange={(e) => onChange({ ...config, minOrderFrequency: e.target.value || undefined })}
+            placeholder="0"
+            className="filter-input"
+          />
+        </div>
+        <div>
+          <label className="filter-label">Max Order Frequency</label>
+          <input
+            type="number"
+            min={0}
+            value={(config.maxOrderFrequency as string) || ""}
+            onChange={(e) => onChange({ ...config, maxOrderFrequency: e.target.value || undefined })}
+            placeholder="∞"
+            className="filter-input"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EngagementManagementFilterForm({ config, onChange, options }: FilterFormProps) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <label className="filter-label">Nama CS</label>
+        <MultiSelect
+          options={options.csNames}
+          selected={(config.csNames as string[]) || []}
+          onChange={(v) => onChange({ ...config, csNames: v.length > 0 ? v : undefined })}
+          placeholder="Pilih nama CS..."
+          allowCustom
+        />
+      </div>
+      <div className="sm:col-span-2">
+        <label className="filter-label">Sumber Leads</label>
+        <MultiSelect
+          options={options.leadSources}
+          selected={(config.leadSources as string[]) || []}
+          onChange={(v) => onChange({ ...config, leadSources: v.length > 0 ? v : undefined })}
+          placeholder="Pilih sumber leads..."
+          allowCustom
+        />
+      </div>
+    </div>
+  );
+}
+
+const FILTER_FORMS: Record<FilterType, React.FC<FilterFormProps>> = {
+  brand: BrandFilterForm,
+  transaction: TransactionFilterForm,
+  timeframe: TimeframeFilterForm,
+  demographics: DemographicsFilterForm,
+  engagement_customer: EngagementCustomerFilterForm,
+  engagement_management: EngagementManagementFilterForm,
+};
+
+// ─── Main Page ────────────────────────────────────────────
+
+export default function NewSegmentPage() {
+  const router = useRouter();
+  const { data: session } = useSession();
+
+  const [segmentName, setSegmentName] = useState("New Segment");
+  const [editingTitle, setEditingTitle] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (editingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [editingTitle]);
+
+  const commitTitle = () => {
+    if (!segmentName.trim()) {
+      setSegmentName("New Segment");
+    }
+    setEditingTitle(false);
+  };
+  const [filters, setFilters] = useState<FilterModule[]>([]);
+  const [showFilterPicker, setShowFilterPicker] = useState(false);
+  const [preview, setPreview] = useState<AudiencePreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [settings, setSettings] = useState<AppSettingsData>({
+    currency: "IDR",
+    currencySymbol: "Rp",
+    marketingCostPerCustomer: 610,
+  });
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    brands: ["Amura", "Reglow"],
+    provinces: [],
+    cities: [],
+    districts: [],
+    csNames: [],
+    leadSources: [],
+    customerTypes: ["new", "repeat", "loyal"],
+    expeditions: [],
+    transactionTypes: ["COD", "Transfer"],
+  });
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ─── Load data ──────────────────────────────────────────
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d && !d.error) {
+          setSettings({
+            currency: d.currency || "IDR",
+            currencySymbol: d.currencySymbol || "Rp",
+            marketingCostPerCustomer: d.marketingCostPerCustomer || 610,
+          });
+        }
+      })
+      .catch(() => {});
+
+    fetch("/api/segments/filter-options")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d && !d.error) setFilterOptions(d);
+      })
+      .catch(() => {});
+  }, []);
+
+  // ─── Preview (debounced) ────────────────────────────────
+
+  const runPreview = useCallback((currentFilters: FilterModule[]) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      if (currentFilters.length === 0) {
+        setPreview(null);
+        return;
+      }
+      setPreviewLoading(true);
+      try {
+        const res = await fetch("/api/segments/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filters: currentFilters }),
+        });
+        if (res.ok) setPreview(await res.json());
+      } catch {
+        // silent
+      } finally {
+        setPreviewLoading(false);
+      }
+    }, 600);
+  }, []);
+
+  useEffect(() => {
+    runPreview(filters);
+  }, [filters, runPreview]);
+
+  // ─── Filter actions ─────────────────────────────────────
+
+  const addFilter = (type: FilterType) => {
+    setFilters([
+      ...filters,
+      { id: genId(), type, connector: "AND", config: {} },
+    ]);
+    setShowFilterPicker(false);
+  };
+
+  const removeFilter = (id: string) => {
+    setFilters(filters.filter((f) => f.id !== id));
+  };
+
+  const updateFilterConfig = (id: string, config: Record<string, unknown>) => {
+    setFilters(filters.map((f) => (f.id === id ? { ...f, config } : f)));
+  };
+
+  const toggleConnector = (id: string) => {
+    setFilters(
+      filters.map((f) =>
+        f.id === id
+          ? { ...f, connector: f.connector === "AND" ? "OR" : "AND" }
+          : f,
+      ),
+    );
+  };
+
+  // ─── Save ───────────────────────────────────────────────
+
+  const handleSave = async () => {
+    if (!segmentName.trim() || segmentName === "New Segment") {
+      setEditingTitle(true);
+      return;
+    }
+    setSaving(true);
+    try {
+      const usersRes = await fetch("/api/users");
+      const users = await usersRes.json();
+      const me = users.find(
+        (u: { email: string }) => u.email === session?.user?.email,
+      );
+      if (!me) {
+        alert("User not found.");
+        setSaving(false);
+        return;
+      }
+      const res = await fetch("/api/segments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: segmentName,
+          description: null,
+          filters,
+          resultCount: preview?.matchingCount || 0,
+          createdById: me.id,
+        }),
+      });
+      if (res.ok) {
+        router.push("/campaign");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to save segment.");
+      }
+    } catch {
+      alert("Network error.");
+    }
+    setSaving(false);
+  };
+
+  // ─── Computed ───────────────────────────────────────────
+
+  const matchingCount = preview?.matchingCount || 0;
+  const campaignCost = matchingCount * settings.marketingCostPerCustomer;
+
+  // ─── Render ─────────────────────────────────────────────
+
+  return (
+    <AppShell
+      active="Campaigns"
+      header={
+        <div className="flex flex-wrap items-start justify-between gap-6">
+          <div className="group">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+              Campaigns &gt; New Segment
+            </p>
+            {editingTitle ? (
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  ref={titleInputRef}
+                  type="text"
+                  value={segmentName}
+                  onChange={(e) => setSegmentName(e.target.value)}
+                  onBlur={commitTitle}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitTitle();
+                    if (e.key === "Escape") {
+                      setSegmentName("New Segment");
+                      setEditingTitle(false);
+                    }
+                  }}
+                  className="editable-title-input font-[var(--font-sora)] text-3xl font-semibold outline-none border-b-2 border-blue-500 bg-transparent py-1"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <h1
+                  onClick={() => setEditingTitle(true)}
+                  className="editable-title mt-2 cursor-pointer font-[var(--font-sora)] text-3xl font-semibold transition hover:text-blue-600"
+                >
+                  {segmentName}
+                </h1>
+                <button 
+                  onClick={() => setEditingTitle(true)}
+                  className="mt-2 rounded-full p-1 text-slate-300 opacity-0 transition group-hover:opacity-100 hover:bg-slate-100 hover:text-slate-500"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            <p className="text-sm text-slate-500">
+              Definisikan filter audiens untuk campaign marketing Anda.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => router.push("/campaign")}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 5h11l3 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" />
+                    <path d="M8 5v6h6V5" />
+                  </svg>
+                  Save Segment
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      }
+      rightAside={
+        <>
+          {/* ─── Audience Summary ─── */}
+          <Card className="px-5 py-5">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Audience Summary
+              </p>
+              <button 
+                onClick={() => runPreview(filters)}
+                className="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                {previewLoading ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600 inline-block" />
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M23 4v6h-6M1 20v-6h6" />
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                  </svg>
+                )}
+              </button>
+            </div>
+
+            <div className="mt-6">
+              <p className="text-4xl font-bold tracking-tight">
+                {matchingCount.toLocaleString("id-ID")}
+              </p>
+              <p className="text-sm font-medium text-slate-500">Matching Users</p>
+
+              {/* Progress bar */}
+              <div className="mt-5 h-2 w-full rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-blue-600 transition-all duration-700 ease-out"
+                  style={{ width: `${Math.min(preview?.percentage || 0, 100)}%` }}
+                />
+              </div>
+              <p className="mt-3 text-xs font-medium text-slate-400">
+                Top {preview?.percentage || 0}% of your customer base
+              </p>
+            </div>
+
+            {/* Customer mini-table */}
+            {preview && preview.customers.length > 0 && (
+              <div className="mt-8 border-t border-slate-100 pt-5">
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-3 px-1">
+                  <span className="flex-[2]">Name</span>
+                  <span className="flex-1 text-center">Last Pur.</span>
+                  <span className="w-8 text-right">Status</span>
+                </div>
+                <div className="space-y-4 text-xs font-medium">
+                  {preview.customers.slice(0, 7).map((c, i) => (
+                    <div key={i} className="flex items-center justify-between px-1 hover:bg-slate-50 py-1 rounded-lg transition-colors cursor-default">
+                      <span className="text-slate-800 truncate flex-[2]">
+                        {c.customerName || "—"}
+                      </span>
+                      <span className="text-slate-500 flex-1 text-center font-normal">
+                        {c.lastPurchase ? (() => {
+                          const diff = Date.now() - new Date(c.lastPurchase).getTime();
+                          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                          if (days < 7) return `${days}d ago`;
+                          return `${Math.floor(days / 7)}w ago`;
+                        })() : "—"}
+                      </span>
+                      <span className="w-8 flex justify-end">
+                        <div 
+                          className={`h-2 w-2 rounded-full ${
+                            c.status === "process" ? "bg-green-500" : 
+                            c.status === "pending" ? "bg-amber-500" : 
+                            "bg-slate-300"
+                          }`} 
+                        />
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-8">
+                  <Button 
+                    variant="outline" 
+                    className="w-full text-xs font-bold uppercase tracking-widest text-slate-600 py-3 rounded-xl border-slate-200"
+                  >
+                    View All {matchingCount.toLocaleString("id-ID")} Users
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* ─── Campaign Cost ─── */}
+          <Card className="px-5 py-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Est. Campaign Cost
+              </p>
+              <Badge>via WhatsApp</Badge>
+            </div>
+            <p className="mt-3 text-2xl font-semibold">
+              {fmtCurrency(campaignCost, settings.currencySymbol)}
+            </p>
+
+            {/* Cost calculation with tooltip */}
+            <span className="info-tooltip mt-1 inline-flex items-center gap-1.5 text-xs text-slate-400">
+              <span>
+                {matchingCount.toLocaleString("id-ID")} customers × {settings.currencySymbol}{" "}
+                {settings.marketingCostPerCustomer.toLocaleString("id-ID")} / customer
+              </span>
+              <InfoIcon />
+              <span className="info-tooltip-content">
+                Angka pengkalian dan kurs didapat dari menu Settings
+              </span>
+            </span>
+          </Card>
+        </>
+      }
+    >
+      {/* ─── Filter Canvas ─── */}
+      <div className="space-y-4 pb-24">
+        {/* Starting capsule */}
+        <div className="flex justify-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+            </svg>
+            Filter Builder
+          </div>
+        </div>
+
+        {/* Filter modules */}
+        {filters.map((filter, index) => {
+          const def = FILTER_DEFS[filter.type];
+          const IconComp = FILTER_ICONS[filter.type];
+          const FormComp = FILTER_FORMS[filter.type];
+
+          return (
+            <div key={filter.id}>
+              {/* AND/OR connector */}
+              {index > 0 && (
+                <div className="flex justify-center mb-4">
+                  <span className="tooltip-wrapper">
+                    <button
+                      onClick={() => toggleConnector(filter.id)}
+                      className={`connector-badge ${
+                        filter.connector === "AND"
+                          ? "connector-badge--and"
+                          : "connector-badge--or"
+                      }`}
+                    >
+                      {filter.connector}
+                    </button>
+                    <span className="tooltip-label">Klik untuk toggle AND/OR</span>
+                  </span>
+                </div>
+              )}
+
+              {/* Filter card */}
+              <Card className="px-6 py-5 transition-shadow hover:shadow-lg">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`grid h-10 w-10 place-items-center rounded-2xl ${def.iconBg} ${def.iconColor}`}>
+                      <IconComp />
+                    </div>
+                    <div>
+                      <p className="text-base font-semibold">{def.label}</p>
+                      <p className="text-xs text-slate-400">{def.description}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeFilter(filter.id)}
+                    className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                    title="Hapus filter"
+                  >
+                    <CloseIcon />
+                  </button>
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/50 p-5">
+                  <FormComp
+                    config={filter.config}
+                    onChange={(c) => updateFilterConfig(filter.id, c)}
+                    options={filterOptions}
+                    settings={settings}
+                  />
+                </div>
+              </Card>
+            </div>
+          );
+        })}
+
+        {/* Empty state */}
+        {filters.length === 0 && (
+          <Card className="border-dashed px-6 py-16">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="grid h-16 w-16 place-items-center rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-500">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-lg font-semibold text-slate-700">
+                  Mulai buat Segment baru
+                </p>
+                <p className="mt-1 text-sm text-slate-400">
+                  Tambahkan filter untuk mendefinisikan audiens target Anda.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowFilterPicker(true)}
+                className="floating-add-btn"
+              >
+                <PlusCircleIcon />
+                Add Filter
+              </button>
+            </div>
+          </Card>
+        )}
+      </div>
+
+      {/* ─── Floating Add Filter Button ─── */}
+      {filters.length > 0 && (
+        <div className="floating-add-filter">
+          <button
+            onClick={() => setShowFilterPicker(!showFilterPicker)}
+            className="floating-add-btn"
+          >
+            <PlusCircleIcon />
+            Add Filter
+          </button>
+        </div>
+      )}
+
+      {/* ─── Floating Filter Picker ─── */}
+      {showFilterPicker && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/10"
+            onClick={() => setShowFilterPicker(false)}
+          />
+          <div className="floating-picker">
+            <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+              <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Pilih Tipe Filter
+              </p>
+              <div className="space-y-1">
+                {(Object.keys(FILTER_DEFS) as FilterType[]).map((type) => {
+                  const def = FILTER_DEFS[type];
+                  const IconComp = FILTER_ICONS[type];
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => addFilter(type)}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-slate-50"
+                    >
+                      <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${def.iconBg} ${def.iconColor}`}>
+                        <IconComp />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-700">{def.label}</p>
+                        <p className="text-xs text-slate-400">{def.description}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </AppShell>
+  );
+}

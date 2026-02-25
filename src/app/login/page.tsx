@@ -4,7 +4,9 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-export default function LoginPage() {
+import { Suspense } from "react";
+
+function LoginContent() {
   const sp = useSearchParams();
   const hasError = Boolean(sp.get("error"));
 
@@ -278,5 +280,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

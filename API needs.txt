@@ -1,0 +1,25 @@
+### API Needs for Dynamic CRM Integration
+
+To enable a fully dynamic query system with Perpack (WMS API), the following additions or enhancements are required:
+
+1. **Detailed Status Fields**:
+   - `status_fulfillment`: (e.g., packed, shipped, partially_shipped)
+   - `status_external`: (e.g., waiting, shipping, delivered, returned)
+   - *Current limitation*: We only have a generic `status` field. We need these to filter "Customer in Transit" vs "Customer who Received".
+
+2. **Deeper Engagement Metrics (Directly in API)**:
+   - `customer_total_order_count`: To filter by "Loyal" vs "New" without calculating on our end.
+   - `customer_average_order_value`: To filter big spenders.
+   - `customer_last_order_date`: Important for "Churned" filter logic.
+
+3. **Query Capability Improvements**:
+   - **Filter by AWB**: Ability to search specifically by Airway Bill.
+   - **Filter by Product SKU List**: A comma-separated SKU filter would be more efficient than broad search.
+   - **Lead Capture Date**: `leads_at` field is missing in some records but critical for marketing ROI.
+
+4. **Consistency**:
+   - `shipping_date`: Ensure this is always populated when status is "shipped" or "delivered".
+   - `warehouse_name`: Currently only have `warehouse_id`.
+
+5. **Differentiated Deduplication**:
+   - Option to return unique customers only (by `customer_phone`) to avoid bloating preview data with multiple orders from the same user.

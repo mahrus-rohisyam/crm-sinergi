@@ -1,0 +1,52 @@
+WMS API Documentation
+Endpoint: Social Commerce Orders (GET)
+Base URL: https://wms-api.sinergisuperapp.com
+Endpoint: /v1/open/social-commerce/orders
+Method: GET
+Authentication
+Header Value
+x-api-key Your API Key
+Query Parameters
+Parameter Type Required Description Example
+page int No Page number 1
+length int No Number of records per page 50
+search string No Search keyword
+start_date datetime No Filter start date 2026-02-25 00:00:00
+status string No Order status filter process
+Example Request
+GET https://wms-api.sinergisuperapp.com/v1/open/social-commerce/orders?page=1&length=5Headers:
+x-api-key: YOUR_API_KEY
+Sample Response (200)
+{
+ "code": 200,
+ "msg": { "id": "Sukses", "en": "Success" },
+ "data": [
+ {
+ "id": 53487,
+ "client_id": 2,
+ "client_name": "Amura",
+ "reference_no": "4260225053487",
+ "warehouse_id": 6,
+ "ads_platform_name": "Meta PRD",
+ "amount": 244000,
+ "discount_amount": 11825,
+ "shipping_fee": 9500,
+ "cod_fee": 8325,
+ "customer_name": "Residemia",
+ "customer_phone": "6282164976522",
+ "customer_address": "Jl. Garu VI No.38, Medan",
+ "customer_province": "Sumatera Utara",
+ "customer_city": "Kota Medan",
+ "customer_district": "Medan Amplas",
+ "payment_method": "COD",
+ "qty": 3,
+ "product_summary": "1 AM-DSP-10,1 AM-SS50,1 AM-EGC-100",
+ "courier": "IDExpress",
+ "courier_label": "Standard",
+ "is_cod": true,
+ "status": "pending",
+ "order_at": "2026-02-25T21:39:14+07:00",
+ "created_at": "2026-02-25T21:39:14+07:00"
+ }
+ ]
+}

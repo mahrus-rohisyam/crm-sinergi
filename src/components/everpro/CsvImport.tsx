@@ -10,7 +10,9 @@ const sampleHeaders = [
   "terakhir_diblast",
 ];
 
-const sampleRows = [
+type CsvRow = Record<string, string>;
+
+const sampleRows: CsvRow[] = [
   {
     no_hp: "6282211655299",
     nama_customer: "Mahrus Rohisyam",
@@ -40,8 +42,8 @@ function parseCsv(text: string) {
 }
 
 export function CsvImport() {
-  const [headers, setHeaders] = useState(sampleHeaders);
-  const [rows, setRows] = useState(sampleRows);
+  const [headers, setHeaders] = useState<string[]>(sampleHeaders);
+  const [rows, setRows] = useState<CsvRow[]>(sampleRows);
   const [fileName, setFileName] = useState("sample.csv");
   const [error, setError] = useState("");
 

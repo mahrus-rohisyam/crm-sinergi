@@ -15,7 +15,7 @@ export default function NotFound() {
         </p>
         <div className="mt-6 flex flex-col gap-3">
           <Link
-            href="/dashboard"
+            href="/segment-builder"
             className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white"
           >
             Back to dashboard

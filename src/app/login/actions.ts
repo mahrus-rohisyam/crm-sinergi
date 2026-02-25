@@ -1,28 +1,25 @@
 "use server";
 
-import { signIn, signOut } from "next-auth/react";
 import { redirect } from "next/navigation";
-
-export async function login(formData: FormData) {
-  const email = String(formData.get("email") || "")
-    .toLowerCase()
-    .trim();
-  const password = String(formData.get("password") || "");
-
-  if (!email || !password) redirect("/login?error=1");
-
-  try {
-    await signIn("credentials", {
-      email,
-      password,
-      redirect: true,
-      redirectTo: "/dashboard",
-    });
-  } catch {
-    redirect("/login?error=1");
-  }
-}
+import { cookies } from "next/headers";
 
 export async function logout() {
-  await signOut({ redirect: true, callbackUrl: "/login" });
+  // Clear the NextAuth session cookies server-side
+  const cookieStore = await cookies();
+
+  // NextAuth v4 uses these cookie names
+  const sessionCookieNames = [
+    "next-auth.session-token",
+    "__Secure-next-auth.session-token",
+    "next-auth.csrf-token",
+    "__Secure-next-auth.csrf-token",
+    "next-auth.callback-url",
+    "__Secure-next-auth.callback-url",
+  ];
+
+  for (const name of sessionCookieNames) {
+    cookieStore.delete(name);
+  }
+
+  redirect("/login");
 }

@@ -6,15 +6,32 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({ req });
   const path = req.nextUrl.pathname;
 
-  // Root: redirect sesuai login status
+  // Root: redirect based on login status
   if (path === "/") {
     return NextResponse.redirect(
-      new URL(token ? "/dashboard" : "/login", req.url),
+      new URL(token ? "/campaign" : "/login", req.url),
     );
   }
 
-  // Proteksi dashboard
-  if (path.startsWith("/dashboard") && !token) {
+  // If logged in and visiting /login, redirect to campaign
+  if (path === "/login" && token) {
+    return NextResponse.redirect(new URL("/campaign", req.url));
+  }
+
+  // Protected routes: redirect to login if not authenticated
+  const protectedPrefixes = [
+    "/campaign",
+    "/everpro-sync",
+    "/users",
+    "/profile",
+    "/settings",
+  ];
+
+  const isProtected = protectedPrefixes.some((prefix) =>
+    path.startsWith(prefix),
+  );
+
+  if (isProtected && !token) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
@@ -22,5 +39,13 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/dashboard/:path*"],
+  matcher: [
+    "/",
+    "/login",
+    "/campaign/:path*",
+    "/everpro-sync/:path*",
+    "/users/:path*",
+    "/profile/:path*",
+    "/settings/:path*",
+  ],
 };

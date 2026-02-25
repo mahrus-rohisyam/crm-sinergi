@@ -2,7 +2,6 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { logout } from "@/app/login/actions";
 import { CsvImport } from "@/components/everpro/CsvImport";
 
 export default function EverproSyncPage() {
@@ -25,9 +24,6 @@ export default function EverproSyncPage() {
           <div className="flex items-center gap-3">
             <Button variant="outline">Download Template</Button>
             <Button>Sync Now</Button>
-            <form action={logout}>
-              <Button variant="ghost">Sign out</Button>
-            </form>
           </div>
         </div>
       }

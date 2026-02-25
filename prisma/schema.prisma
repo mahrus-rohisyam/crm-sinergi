@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,12 +7,155 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Users & Auth ───────────────────────────────────────────
+
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  passwordHash String
-  name      String?
-  role      String   @default("admin")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String
+  name         String?
+  avatar       String?  // URL or path to avatar image
+  role         String   @default("member") // admin | member
+  isActive     Boolean  @default(true)
+  lastActiveAt DateTime? // tracks when user was last active/online
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  segments     Segment[]
+  campaigns    Campaign[]
+}
+
+// ─── Application Settings (singleton-ish, one row) ──────────
+
+model AppSettings {
+  id           String   @id @default("default")
+  appName      String   @default("CRM Suite")
+  currency     String   @default("IDR")
+  currencySymbol String @default("Rp")
+  marketingCostPerCustomer Float @default(610)
+  logoUrl      String?  // path to uploaded logo
+  faviconUrl   String?  // path to uploaded favicon
+  updatedAt    DateTime @updatedAt
+}
+
+// ─── Segments ───────────────────────────────────────────────
+
+model Segment {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  filters      Json     // stores the filter tree (AND/OR groups)
+  resultCount  Int      @default(0)
+  createdById  String
+  createdBy    User     @relation(fields: [createdById], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  campaigns    Campaign[]
+}
+
+// ─── Campaigns ──────────────────────────────────────────────
+
+model Campaign {
+  id           String   @id @default(cuid())
+  name         String
+  segmentId    String
+  segment      Segment  @relation(fields: [segmentId], references: [id])
+  status       String   @default("draft") // draft | scheduled | sent
+  scheduledAt  DateTime?
+  sentAt       DateTime?
+  totalCost    Float    @default(0)
+  createdById  String
+  createdBy    User     @relation(fields: [createdById], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ─── Everpro Engagement Contacts ────────────────────────────
+
+model EverproContact {
+  id             String   @id @default(cuid())
+  phoneNumber    String   @unique // unique identifier = HP
+  customerName   String
+  blastStatus    String   @default("Belum") // Sudah | Belum
+  lastBlastDate  DateTime?
+  csName         String?
+  importedAt     DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ─── Perpack Transaction Data (synced from WMS API) ─────────
+
+model PerpackTransaction {
+  id              String   @id @default(cuid())
+  wmsId           Int?     @unique  // WMS API "id"
+  orderNumber     String   @unique  // reference_no
+  orderId         Int?              // WMS order_id
+  customerId      Int?              // WMS customer_id
+
+  // Customer
+  customerName    String
+  phoneNumber     String
+  customerEmail   String?
+  customerType    String?  // new | repeat | renew | loyal
+
+  // Product & Money
+  brand           String   // client_name → Amura | Reglow
+  sku             String   // product_summary
+  productName     String?
+  quantity        Int      @default(1)
+  unitPrice       Float    @default(0)
+  totalPrice      Float    @default(0)  // amount
+  discount        Float    @default(0)  // discount_amount
+  shippingCost    Float    @default(0)  // shipping_fee
+  codFee          Float    @default(0)  // cod_fee
+  discountShipping Float   @default(0)  // discount_shipping_fee
+  otherAmount     Float    @default(0)  // other_amount
+
+  // Payment
+  transactionType String?  // payment_method: COD | Transfer | LION COD etc
+  paymentStatus   String?  // payment_status: cod | transfer
+  packageType     String?
+  destinationBank String?
+  isCod           Boolean  @default(false)
+
+  // Shipping
+  expedition      String?  // courier
+  courierLabel    String?  // courier_label: EZ | REGPACK | Standard
+  awb             String?  // airway bill number
+
+  // Sales / Management
+  csName          String?  // customer_service
+  csId            Int?     // customer_service_id
+  leadSource      String?  // ads_platform_name: Meta PRD, REPEAT, Meta KCT
+  leadSourceId    Int?     // ads_platform_id
+  warehouseId     Int?     // warehouse_id
+  note            String?  // order note
+
+  // Address
+  fullAddress     String?  // customer_address
+  kelurahan       String?  // customer_sub_district
+  kecamatan       String?  // customer_district
+  city            String?  // customer_city
+  province        String?  // customer_province
+
+  // Order Status
+  status          String?  // pending | process | delivered | returned etc
+  statusFulfill   String?  // status_fulfillment: packed | shipped etc
+  statusExternal  String?  // status_external: shipping | waiting etc
+
+  // Dates
+  inputDate       DateTime?  // created_at from WMS
+  shippingDate    DateTime?
+  orderAt         DateTime?  // order_at — actual order time
+  leadsAt         DateTime?  // leads_at — when lead was captured
+
+  syncedAt        DateTime @default(now())
+
+  @@index([phoneNumber])
+  @@index([brand])
+  @@index([status])
+  @@index([orderAt])
+  @@index([customerType])
 }
