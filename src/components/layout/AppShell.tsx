@@ -15,7 +15,7 @@ type AppSettings = {
 const navItems = [
   {
     label: "Campaigns",
-    href: "/campaign",
+    href: "/",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
         <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -113,10 +113,11 @@ export function AppShell({ active, header, children, rightAside }: AppShellProps
     .toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[var(--app-bg)] text-[var(--text-strong)]">
-      <div className="flex min-h-screen">
+    <div className="h-screen overflow-hidden bg-[var(--app-bg)] text-[var(--text-strong)]">
+      <div className="flex h-full">
+        {/* Sidebar */}
         <aside className="flex w-72 shrink-0 flex-col border-r border-[var(--border)] bg-white/85 backdrop-blur">
-          {/* Brand — dynamic from settings */}
+          {/* Brand — dynamic from settings - Top */}
           <div className="flex items-center gap-3 px-6 py-6">
             {appSettings.logoUrl ? (
               <img
@@ -138,8 +139,8 @@ export function AppShell({ active, header, children, rightAside }: AppShellProps
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 px-3">
+          {/* Navigation - Middle (scrollable if items too many, but pushed down) */}
+          <nav className="flex-1 overflow-y-auto px-3">
             <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
               Workspace
             </p>
@@ -170,8 +171,8 @@ export function AppShell({ active, header, children, rightAside }: AppShellProps
             </div>
           </nav>
 
-          {/* User card & Sign out */}
-          <div className="px-6 pb-6 pt-4">
+          {/* User card & Sign out - Bottom */}
+          <div className="border-t border-[var(--border)] px-6 pb-6 pt-4">
             <Link
               href="/profile"
               className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:bg-slate-50"
@@ -179,12 +180,12 @@ export function AppShell({ active, header, children, rightAside }: AppShellProps
               <div className="grid h-10 w-10 place-items-center rounded-full bg-orange-100 text-sm font-semibold text-orange-700">
                 {initials}
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold">{userName}</p>
-                <p className="text-xs text-slate-500">{userEmail}</p>
+              <div className="flex-1 overflow-hidden">
+                <p className="truncate text-sm font-semibold">{userName}</p>
+                <p className="truncate text-xs text-slate-500">{userEmail}</p>
               </div>
             </Link>
-            <form action={logout} className="mt-2">
+            <form action={logout} className="mt-2 text-red-100">
               <button
                 type="submit"
                 className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-red-50 hover:text-red-600"
@@ -200,12 +201,15 @@ export function AppShell({ active, header, children, rightAside }: AppShellProps
           </div>
         </aside>
 
-        <div className="flex flex-1 gap-6 px-6 py-6">
-          <main className="flex-1 space-y-6">
-            {header}
-            {children}
-          </main>
-          {rightAside ? <aside className="w-80 space-y-6">{rightAside}</aside> : null}
+        {/* Main Content Area - Scrollable */}
+        <div className="flex flex-1 overflow-y-auto">
+          <div className="flex w-full gap-6 px-6 py-6">
+            <main className="flex-1 space-y-6">
+              {header}
+              {children}
+            </main>
+            {rightAside ? <aside className="w-80 space-y-6">{rightAside}</aside> : null}
+          </div>
         </div>
       </div>
     </div>

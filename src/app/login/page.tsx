@@ -160,7 +160,7 @@ function LoginContent() {
               await signIn("credentials", {
                 email,
                 password,
-                callbackUrl: "/dashboard",
+                callbackUrl: "/",
               });
               setLoading(false);
             }}

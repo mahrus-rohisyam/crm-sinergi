@@ -643,7 +643,7 @@ export default function NewSegmentPage() {
         }),
       });
       if (res.ok) {
-        router.push("/campaign");
+        router.push("/");
       } else {
         const data = await res.json();
         alert(data.error || "Failed to save segment.");
@@ -712,7 +712,7 @@ export default function NewSegmentPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => router.push("/campaign")}>
+            <Button variant="outline" onClick={() => router.push("/")}>
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={saving}>

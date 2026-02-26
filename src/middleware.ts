@@ -6,21 +6,28 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({ req });
   const path = req.nextUrl.pathname;
 
-  // Root: redirect based on login status
+  // 1. Redirect /campaign to / (root)
+  if (path.startsWith("/campaign")) {
+    const newPath = path.replace("/campaign", "") || "/";
+    return NextResponse.redirect(new URL(newPath, req.url));
+  }
+
+  // 2. Root route: ensure user is logged in
   if (path === "/") {
-    return NextResponse.redirect(
-      new URL(token ? "/campaign" : "/login", req.url),
-    );
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+    return NextResponse.next();
   }
 
-  // If logged in and visiting /login, redirect to campaign
+  // 3. If logged in and visiting /login, redirect to root
   if (path === "/login" && token) {
-    return NextResponse.redirect(new URL("/campaign", req.url));
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
-  // Protected routes: redirect to login if not authenticated
+  // 4. Protected routes: redirect to login if not authenticated
   const protectedPrefixes = [
-    "/campaign",
+    "/segment",
     "/everpro-sync",
     "/users",
     "/profile",
@@ -42,10 +49,12 @@ export const config = {
   matcher: [
     "/",
     "/login",
-    "/campaign/:path*",
+    "/segment/:path*",
+    "/overview/:path*",
     "/everpro-sync/:path*",
     "/users/:path*",
     "/profile/:path*",
     "/settings/:path*",
+    "/campaign/:path*",
   ],
 };
