@@ -1,6 +1,6 @@
 # CRM Segmentation Tools – Project TODO
 
-> Updated: 2026-03-08
+> Updated: 2026-03-09
 > Source of truth: `project-brief/Text/scope-of-work.md` & `project-brief/Text/Segementationtools.md`
 > Compared against existing screens in `src/app` and `src/components`
 
@@ -85,9 +85,9 @@
 |---|------|--------|-------|
 | 5.1 | Everpro Sync page UI | ✅ | Premium redesign with upload zone, steps, and history table |
 | 5.2 | CSV import UI | ✅ | Supports .csv and .xlsx with toast notifications |
-| 5.3 | Excel/CSV Preview | ✅ | Read-only spreadsheet preview using XLSX library |
+| 5.3 | Excel/CSV Preview | ✅ | Immersive full-screen read-only spreadsheet (react-spreadsheet) |
 | 5.4 | Upload History & Pagination | ✅ | Database integration with 10/50/100 rows per page |
-| 5.5 | CSV → Database persistence | 🟡 | API routes created, but schema currently being refined |
+| 5.5 | CSV → Database persistence | ✅ | Real-time row counting & physical file cleanup on delete |
 
 ---
 
@@ -182,7 +182,7 @@
 | Layout & Nav | 4 | 0 | 2 | 0 | 6 |
 | Segment Builder | 1 | 4 | 12 | 0 | 17 |
 | Dashboard | 0 | 2 | 0 | 1 | 3 |
-| Everpro Sync | 4 | 1 | 0 | 0 | 5 |
+| Everpro Sync | 5 | 0 | 0 | 0 | 5 |
 | Export Data | 0 | 1 | 3 | 0 | 4 |
 | Campaign | 0 | 0 | 2 | 0 | 2 |
 | API Integration | 0 | 0 | 4 | 0 | 4 |
@@ -190,4 +190,4 @@
 | Settings | 6 | 0 | 0 | 0 | 6 |
 | Database & Infra | 9 | 0 | 0 | 0 | 9 |
 | Code Quality | 0 | 0 | 5 | 0 | 5 |
-| **TOTAL** | **36** | **8** | **28** | **1** | **73** |
+| **TOTAL** | **37** | **7** | **28** | **1** | **73** |
