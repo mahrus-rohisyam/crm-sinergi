@@ -159,3 +159,13 @@ model PerpackTransaction {
   @@index([orderAt])
   @@index([customerType])
 }
+
+model EverproUploadHistory {
+  id          String   @id @default(cuid())
+  fileName    String
+  filePath    String
+  status      String   @default("success") // success | failed | uploading
+  totalRows   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
