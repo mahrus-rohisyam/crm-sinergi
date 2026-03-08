@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getDistinctFilterValues } from "@/lib/wms-api";
 
-// Standard Indonesian provinces (38)
+// Standard Indonesian provinces (38) - fallback if WMS API fails
 const INDONESIA_PROVINCES = [
   "Aceh", "Bali", "Banten", "Bengkulu",
   "DI Yogyakarta", "DKI Jakarta",
@@ -26,127 +26,38 @@ const TRANSACTION_TYPES = ["COD", "Transfer"];
 
 /**
  * GET /api/segments/filter-options
- * Returns distinct values from PerpackTransaction for all filter fields,
+ * Returns distinct values from WMS API for all filter fields,
  * merged with static fallback data.
  */
 export async function GET() {
   try {
-    const [
-      dbBrands,
-      dbProvinces,
-      dbCities,
-      dbDistricts,
-      dbCsNames,
-      dbLeadSources,
-      dbCustomerTypes,
-      dbExpeditions,
-      dbTransactionTypes,
-    ] = await Promise.all([
-      prisma.perpackTransaction.findMany({
-        select: { brand: true },
-        distinct: ["brand"],
-        where: { brand: { not: "" } },
-      }),
-      prisma.perpackTransaction.findMany({
-        select: { province: true },
-        distinct: ["province"],
-        where: { province: { not: "" } },
-      }),
-      prisma.perpackTransaction.findMany({
-        select: { city: true },
-        distinct: ["city"],
-        where: { city: { not: "" } },
-      }),
-      prisma.perpackTransaction.findMany({
-        select: { kecamatan: true },
-        distinct: ["kecamatan"],
-        where: { kecamatan: { not: "" } },
-      }),
-      prisma.perpackTransaction.findMany({
-        select: { csName: true },
-        distinct: ["csName"],
-        where: { csName: { not: "" } },
-      }),
-      prisma.perpackTransaction.findMany({
-        select: { leadSource: true },
-        distinct: ["leadSource"],
-        where: { leadSource: { not: "" } },
-      }),
-      prisma.perpackTransaction.findMany({
-        select: { customerType: true },
-        distinct: ["customerType"],
-        where: { customerType: { not: "" } },
-      }),
-      prisma.perpackTransaction.findMany({
-        select: { expedition: true },
-        distinct: ["expedition"],
-        where: { expedition: { not: "" } },
-      }),
-      prisma.perpackTransaction.findMany({
-        select: { transactionType: true },
-        distinct: ["transactionType"],
-        where: { transactionType: { not: "" } },
-      }),
-    ]);
+    // Fetch distinct values from WMS API (first 10 pages = ~1000 orders for sampling)
+    const wmsValues = await getDistinctFilterValues(10);
 
-    // Helper: extract non-null strings from DB results
-    const nonNull = (arr: (string | null)[]): string[] =>
-      arr.filter((v): v is string => v !== null && v !== "");
-
-    // Helper to merge DB values with static fallbacks and sort
-    const merge = (dbValues: string[], staticValues: string[]) => {
-      const set = new Set([...dbValues, ...staticValues]);
+    // Helper to merge WMS values with static fallbacks and sort
+    const merge = (wmsValues: string[], staticValues: string[]) => {
+      const set = new Set([...wmsValues, ...staticValues]);
       return Array.from(set).sort((a, b) => a.localeCompare(b, "id"));
     };
 
-    const brands = merge(
-      nonNull(dbBrands.map((r) => r.brand)),
-      ["Amura", "Reglow"],
-    );
-
-    const provinces = merge(
-      nonNull(dbProvinces.map((r) => r.province)),
-      INDONESIA_PROVINCES,
-    );
-
-    const cities = nonNull(dbCities.map((r) => r.city))
-      .sort((a, b) => a.localeCompare(b, "id"));
-
-    const districts = nonNull(dbDistricts.map((r) => r.kecamatan))
-      .sort((a, b) => a.localeCompare(b, "id"));
-
-    const csNames = nonNull(dbCsNames.map((r) => r.csName))
-      .sort((a, b) => a.localeCompare(b, "id"));
-
-    const leadSources = nonNull(dbLeadSources.map((r) => r.leadSource))
-      .sort((a, b) => a.localeCompare(b, "id"));
-
-    const customerTypes = merge(
-      nonNull(dbCustomerTypes.map((r) => r.customerType)),
-      CUSTOMER_TYPES,
-    );
-
-    const expeditions = nonNull(dbExpeditions.map((r) => r.expedition))
-      .sort((a, b) => a.localeCompare(b, "id"));
-
-    const transactionTypes = merge(
-      nonNull(dbTransactionTypes.map((r) => r.transactionType)),
-      TRANSACTION_TYPES,
-    );
+    const brands = merge(wmsValues.brands, ["Amura", "Reglow"]);
+    const provinces = merge(wmsValues.provinces, INDONESIA_PROVINCES);
+    const customerTypes = merge(wmsValues.customerTypes, CUSTOMER_TYPES);
+    const transactionTypes = merge(wmsValues.transactionTypes, TRANSACTION_TYPES);
 
     return NextResponse.json({
       brands,
       provinces,
-      cities,
-      districts,
-      csNames,
-      leadSources,
+      cities: wmsValues.cities,
+      districts: wmsValues.districts,
+      csNames: wmsValues.csNames,
+      leadSources: wmsValues.leadSources,
       customerTypes,
-      expeditions,
+      expeditions: wmsValues.expeditions,
       transactionTypes,
     });
   } catch (error) {
-    console.error("Failed to fetch filter options:", error);
+    console.error("Failed to fetch filter options from WMS API:", error);
     // Return static fallbacks on error
     return NextResponse.json({
       brands: ["Amura", "Reglow"],
