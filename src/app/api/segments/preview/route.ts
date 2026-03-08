@@ -242,6 +242,8 @@ export async function POST(req: Request) {
           method: "direct_metadata",
           accurate: true,
           sampleSize: response.data.length,
+          totalPages: filteredMetadata.total_page,
+          estimatedApiCallsForFullSync: filteredMetadata.total_page,
         },
       });
     }

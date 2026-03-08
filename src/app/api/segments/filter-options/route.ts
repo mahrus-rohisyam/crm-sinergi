@@ -40,7 +40,7 @@ export async function GET() {
       return Array.from(set).sort((a, b) => a.localeCompare(b, "id"));
     };
 
-    const brands = merge(wmsValues.brands, ["Amura", "Reglow"]);
+    const brands = merge(wmsValues.brands, ["Amura", "Reglow", "Purela"]);
     const provinces = merge(wmsValues.provinces, INDONESIA_PROVINCES);
     const customerTypes = merge(wmsValues.customerTypes, CUSTOMER_TYPES);
     const transactionTypes = merge(wmsValues.transactionTypes, TRANSACTION_TYPES);
@@ -60,7 +60,7 @@ export async function GET() {
     console.error("Failed to fetch filter options from WMS API:", error);
     // Return static fallbacks on error
     return NextResponse.json({
-      brands: ["Amura", "Reglow"],
+      brands: ["Amura", "Reglow", "Purela"],
       provinces: INDONESIA_PROVINCES,
       cities: [],
       districts: [],

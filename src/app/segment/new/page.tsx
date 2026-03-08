@@ -36,6 +36,13 @@ type AudiencePreview = {
     lastPurchase: string;
     status: string; // added status for UI dots
   }>;
+  _meta?: {
+    method: string;
+    accurate: boolean;
+    sampleSize: number;
+    totalPages?: number;
+    estimatedApiCallsForFullSync?: number;
+  };
 };
 
 type AppSettingsData = {
@@ -512,13 +519,15 @@ export default function NewSegmentPage() {
   const [preview, setPreview] = useState<AudiencePreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [pageLimit, setPageLimit] = useState(50); // records per page
+  const [currentPage, setCurrentPage] = useState(1); // current page number
   const [settings, setSettings] = useState<AppSettingsData>({
     currency: "IDR",
     currencySymbol: "Rp",
     marketingCostPerCustomer: 610,
   });
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
-    brands: ["Amura", "Reglow"],
+    brands: ["Amura", "Reglow", "Purela"],
     provinces: [],
     cities: [],
     districts: [],
@@ -658,6 +667,11 @@ export default function NewSegmentPage() {
 
   const matchingCount = preview?.matchingCount || 0;
   const campaignCost = matchingCount * settings.marketingCostPerCustomer;
+  
+  // Calculate total pages based on current pageLimit
+  const totalPages = preview?.totalCount 
+    ? Math.ceil(preview.totalCount / pageLimit) 
+    : 1;
 
   // ─── Render ─────────────────────────────────────────────
 
@@ -921,6 +935,92 @@ export default function NewSegmentPage() {
             </div>
           );
         })}
+
+        {/* Pagination Controls */}
+        {filters.length > 0 && preview && (
+          <Card className="px-6 py-5 bg-slate-50/50">
+            <div className="flex items-center justify-between gap-6">
+              <div className="flex items-center gap-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Records per page
+                  </label>
+                  <select
+                    value={pageLimit}
+                    onChange={(e) => {
+                      setPageLimit(Number(e.target.value));
+                      setCurrentPage(1); // reset to page 1
+                    }}
+                    className="filter-input w-32"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                    <option value={200}>200</option>
+                    <option value={250}>250</option>
+                  </select>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Page
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition"
+                    >
+                      ‹
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={totalPages}
+                      value={currentPage}
+                      onChange={(e) => {
+                        const page = Math.max(1, Math.min(totalPages, Number(e.target.value)));
+                        setCurrentPage(page);
+                      }}
+                      className="filter-input w-20 text-center"
+                    />
+                    <span className="text-sm text-slate-400">/ {totalPages.toLocaleString("id-ID")}</span>
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage >= totalPages}
+                      className="px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition"
+                    >
+                      ›
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col items-end gap-1 text-right">
+                <p className="text-xs font-medium text-slate-500">
+                  Total: <span className="font-semibold text-slate-700">
+                    {preview.totalCount.toLocaleString("id-ID")} records
+                  </span>
+                </p>
+                <p className="text-xs text-slate-400">
+                  Matching: {preview.matchingCount.toLocaleString("id-ID")} ({preview.percentage}%)
+                </p>
+                <p className="text-xs text-slate-400">
+                  Total pages: {totalPages.toLocaleString("id-ID")} @ {pageLimit} per page
+                </p>
+                {preview._meta && (
+                  <p className="text-xs text-slate-400">
+                    Method: <span className={`font-semibold ${preview._meta.accurate ? 'text-green-600' : 'text-amber-600'}`}>
+                      {preview._meta.method === 'direct_metadata' ? 'FAST' : 'SAMPLING'}
+                    </span>
+                    {preview._meta.accurate ? ' ✓' : ' ≈'}
+                  </p>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* Empty state */}
         {filters.length === 0 && (

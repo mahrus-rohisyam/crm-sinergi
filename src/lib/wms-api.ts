@@ -17,6 +17,7 @@ export type WMSOrder = {
   customer_district: string;
   customer_sub_district: string;
   customer_address: string;
+  client_id: number; // brand ID
   client_name: string; // brand
   product_summary: string; // SKU
   qty: number;
@@ -64,6 +65,7 @@ export type WMSQueryParams = {
   start_date?: string; // YYYY-MM-DD
   status?: string;
   search?: string;
+  client_id?: number; // brand filter
 };
 
 /**
@@ -87,6 +89,7 @@ export async function fetchWMSOrders(
   if (params.start_date) url.searchParams.set("start_date", params.start_date);
   if (params.status) url.searchParams.set("status", params.status);
   if (params.search) url.searchParams.set("search", params.search);
+  if (params.client_id) url.searchParams.set("client_id", String(params.client_id));
 
   let lastError: Error | null = null;
 
@@ -218,6 +221,20 @@ export async function getDistinctFilterValues(
 }
 
 /**
+ * Map brand name to WMS API client_id
+ * Returns null if brand is unknown or not mapped
+ */
+export function getBrandClientId(brandName: string): number | null {
+  const brandMap: Record<string, number> = {
+    "Reglow": 1,   // 15,305 orders
+    "Amura": 2,    // primary brand
+    "Purela": 3,   // 89 orders
+  };
+  
+  return brandMap[brandName] || null;
+}
+
+/**
  * Check if filters can be fully satisfied by WMS API query params only
  * (no client-side filtering needed = accurate count via metadata)
  */
@@ -248,7 +265,14 @@ export function canUseDirectMetadata(
           return false;
         }
         break;
-      case "brand":
+      case "brand": {
+        // Can use direct metadata if single brand that can be mapped to client_id
+        const brands = c.brands as string[] | undefined;
+        if (!brands || brands.length === 0) return true;
+        if (brands.length !== 1) return false; // Multiple brands need client-side filtering
+        if (getBrandClientId(brands[0]) === null) return false; // Unmapped brand
+        break;
+      }
       case "transaction":
       case "engagement_customer":
       case "engagement_management":
@@ -275,6 +299,17 @@ export function buildWMSQueryFromFilters(
     const c = filter.config;
 
     switch (filter.type) {
+      case "brand": {
+        // Map to client_id if single brand is provided
+        const brands = c.brands as string[] | undefined;
+        if (brands && brands.length === 1) {
+          const clientId = getBrandClientId(brands[0]);
+          if (clientId !== null) {
+            params.client_id = clientId;
+          }
+        }
+        break;
+      }
       case "timeframe":
         // Map to start_date if inputDateStart is provided
         if (c.inputDateStart) {
@@ -289,7 +324,7 @@ export function buildWMSQueryFromFilters(
           params.search = c.customerName as string;
         }
         break;
-      // Note: WMS API has limited query params (page, length, start_date, status, search)
+      // Note: WMS API has limited query params (page, length, start_date, status, search, client_id)
       // Other filters need to be applied client-side on fetched data
     }
   }
