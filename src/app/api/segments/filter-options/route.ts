@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { getDistinctFilterValues } from "@/lib/wms-api";
+import { 
+  getDistinctFilterValues, 
+  fetchWMSClients,
+  fetchWMSCustomerServices,
+  fetchWMSAdsPlatforms,
+} from "@/lib/wms-api";
 
 // Standard Indonesian provinces (38) - fallback if WMS API fails
 const INDONESIA_PROVINCES = [
@@ -26,41 +31,98 @@ const TRANSACTION_TYPES = ["COD", "Transfer"];
 
 /**
  * GET /api/segments/filter-options
- * Returns distinct values from WMS API for all filter fields,
- * merged with static fallback data.
+ * Returns distinct values from WMS API for all filter fields.
+ * Fetches from dedicated endpoints for efficiency:
+ * - Brands: /v1/open/clients/list
+ * - CS Names: /v1/open/admin/customer-services
+ * - Lead Sources: /v1/open/social-commerce/ads-platform
+ * - Other fields: sampled from orders data
  */
 export async function GET() {
   try {
-    // Fetch distinct values from WMS API (first 10 pages = ~1000 orders for sampling)
-    const wmsValues = await getDistinctFilterValues(10);
+    // Fetch data from dedicated endpoints in parallel for efficiency
+    const [clients, customerServices, adsPlatforms, wmsValues] = await Promise.allSettled([
+      fetchWMSClients(),
+      fetchWMSCustomerServices(), // Fetch all CS across all brands
+      fetchWMSAdsPlatforms(), // Fetch all ads platforms across all brands
+      getDistinctFilterValues(10), // Sample from orders for other fields
+    ]);
 
-    // Helper to merge WMS values with static fallbacks and sort
-    const merge = (wmsValues: string[], staticValues: string[]) => {
-      const set = new Set([...wmsValues, ...staticValues]);
+    // Extract brands from clients
+    let brands: string[] = [];
+    if (clients.status === "fulfilled") {
+      brands = clients.value.map(c => c.name).sort((a, b) => a.localeCompare(b, "id"));
+    } else {
+      console.error("Failed to fetch brands:", clients.reason);
+      brands = []; // No fallback, let frontend handle empty state
+    }
+
+    // Extract CS names from customer services
+    let csNames: string[] = [];
+    if (customerServices.status === "fulfilled") {
+      csNames = customerServices.value
+        .map(cs => cs.name)
+        .filter((name, index, arr) => arr.indexOf(name) === index) // Deduplicate
+        .sort((a, b) => a.localeCompare(b, "id"));
+    } else {
+      console.error("Failed to fetch customer services:", customerServices.reason);
+      csNames = [];
+    }
+
+    // Extract lead sources from ads platforms
+    let leadSources: string[] = [];
+    if (adsPlatforms.status === "fulfilled") {
+      leadSources = adsPlatforms.value
+        .map(ap => ap.name)
+        .filter((name, index, arr) => arr.indexOf(name) === index) // Deduplicate
+        .sort((a, b) => a.localeCompare(b, "id"));
+    } else {
+      console.error("Failed to fetch ads platforms:", adsPlatforms.reason);
+      leadSources = [];
+    }
+
+    // Get values from WMS orders sampling
+    const orderValues = wmsValues.status === "fulfilled" ? wmsValues.value : {
+      brands: [],
+      provinces: [],
+      cities: [],
+      districts: [],
+      csNames: [],
+      leadSources: [],
+      customerTypes: [],
+      expeditions: [],
+      transactionTypes: [],
+    };
+
+    // Helper to merge and sort
+    const merge = (priorityValues: string[], fallbackValues: string[]) => {
+      const set = new Set([...priorityValues, ...fallbackValues]);
       return Array.from(set).sort((a, b) => a.localeCompare(b, "id"));
     };
 
-    const brands = merge(wmsValues.brands, ["Amura", "Reglow", "Purela"]);
-    const provinces = merge(wmsValues.provinces, INDONESIA_PROVINCES);
-    const customerTypes = merge(wmsValues.customerTypes, CUSTOMER_TYPES);
-    const transactionTypes = merge(wmsValues.transactionTypes, TRANSACTION_TYPES);
+    // Merge provinces with Indonesian province list
+    const provinces = merge(orderValues.provinces, INDONESIA_PROVINCES);
+    
+    // For customerTypes and transactionTypes, use order values but merge with fallbacks
+    const customerTypes = merge(orderValues.customerTypes, CUSTOMER_TYPES);
+    const transactionTypes = merge(orderValues.transactionTypes, TRANSACTION_TYPES);
 
     return NextResponse.json({
-      brands,
+      brands, // From /v1/open/clients/list
       provinces,
-      cities: wmsValues.cities,
-      districts: wmsValues.districts,
-      csNames: wmsValues.csNames,
-      leadSources: wmsValues.leadSources,
+      cities: orderValues.cities,
+      districts: orderValues.districts,
+      csNames, // From /v1/open/admin/customer-services
+      leadSources, // From /v1/open/social-commerce/ads-platform
       customerTypes,
-      expeditions: wmsValues.expeditions,
+      expeditions: orderValues.expeditions,
       transactionTypes,
     });
   } catch (error) {
     console.error("Failed to fetch filter options from WMS API:", error);
-    // Return static fallbacks on error
+    // Return minimal fallbacks on complete failure
     return NextResponse.json({
-      brands: ["Amura", "Reglow", "Purela"],
+      brands: [],
       provinces: INDONESIA_PROVINCES,
       cities: [],
       districts: [],

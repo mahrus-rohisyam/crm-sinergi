@@ -17,7 +17,8 @@ type FilterType =
   | "timeframe"
   | "demographics"
   | "engagement_customer"
-  | "engagement_management";
+  | "engagement_management"
+  | "engagement_status";
 
 type FilterModule = {
   id: string;
@@ -105,6 +106,12 @@ const FILTER_DEFS: Record<
     iconBg: "bg-rose-50",
     iconColor: "text-rose-600",
   },
+  engagement_status: {
+    label: "Engagement Status",
+    description: "Status integrasi & aktivitas customer",
+    iconBg: "bg-yellow-50",
+    iconColor: "text-yellow-600",
+  },
 };
 
 // ─── Icons ────────────────────────────────────────────────
@@ -186,6 +193,13 @@ function InfoIcon() {
     </svg>
   );
 }
+function LightningIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
+    </svg>
+  );
+}
 
 const FILTER_ICONS: Record<FilterType, () => React.ReactNode> = {
   brand: BrandIcon,
@@ -194,6 +208,7 @@ const FILTER_ICONS: Record<FilterType, () => React.ReactNode> = {
   demographics: DemographicsIcon,
   engagement_customer: EngagementCustomerIcon,
   engagement_management: EngagementManagementIcon,
+  engagement_status: LightningIcon,
 };
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -481,6 +496,61 @@ function EngagementManagementFilterForm({ config, onChange, options }: FilterFor
   );
 }
 
+function EngagementStatusFilterForm({ config, onChange }: FilterFormProps) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="filter-label">Integration Status</label>
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 bg-white">
+          <div className="flex-1">
+            <p className="text-sm font-medium text-slate-700">Everpro Active</p>
+            <p className="text-xs text-slate-400 mt-0.5">Last sync: 10 minutes ago</p>
+          </div>
+          <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700">
+            Connected
+          </span>
+        </div>
+      </div>
+
+      <div>
+        <label className="filter-label">Last Contact Period (Weeks)</label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <input
+              type="number"
+              min={0}
+              value={(config.lastContactWeeksMin as string) || ""}
+              onChange={(e) => onChange({ ...config, lastContactWeeksMin: e.target.value || undefined })}
+              placeholder="Min weeks"
+              className="filter-input"
+            />
+          </div>
+          <div>
+            <input
+              type="number"
+              min={0}
+              value={(config.lastContactWeeksMax as string) || ""}
+              onChange={(e) => onChange({ ...config, lastContactWeeksMax: e.target.value || undefined })}
+              placeholder="Max weeks"
+              className="filter-input"
+            />
+          </div>
+        </div>
+        {config.lastContactWeeksMax && Number(config.lastContactWeeksMax) < 3 ? (
+          <div className="mt-2 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <span className="font-medium">Last Contact &lt; 3 Weeks Ago</span>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 const FILTER_FORMS: Record<FilterType, React.FC<FilterFormProps>> = {
   brand: BrandFilterForm,
   transaction: TransactionFilterForm,
@@ -488,6 +558,7 @@ const FILTER_FORMS: Record<FilterType, React.FC<FilterFormProps>> = {
   demographics: DemographicsFilterForm,
   engagement_customer: EngagementCustomerFilterForm,
   engagement_management: EngagementManagementFilterForm,
+  engagement_status: EngagementStatusFilterForm,
 };
 
 // ─── Main Page ────────────────────────────────────────────
@@ -527,15 +598,15 @@ export default function NewSegmentPage() {
     marketingCostPerCustomer: 610,
   });
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
-    brands: ["Amura", "Reglow", "Purela"],
+    brands: [], // Fetched from API: /v1/open/clients/list
     provinces: [],
     cities: [],
     districts: [],
-    csNames: [],
-    leadSources: [],
-    customerTypes: ["new", "repeat", "loyal"],
+    csNames: [], // Fetched from API: /v1/open/admin/customer-services
+    leadSources: [], // Fetched from API: /v1/open/social-commerce/ads-platform
+    customerTypes: [], // Fetched from orders sampling
     expeditions: [],
-    transactionTypes: ["COD", "Transfer"],
+    transactionTypes: [], // Fetched from orders sampling
   });
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -554,14 +625,14 @@ export default function NewSegmentPage() {
           });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     fetch("/api/segments/filter-options")
       .then((r) => r.json())
       .then((d) => {
         if (d && !d.error) setFilterOptions(d);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // ─── Preview (debounced) ────────────────────────────────
@@ -667,10 +738,10 @@ export default function NewSegmentPage() {
 
   const matchingCount = preview?.matchingCount || 0;
   const campaignCost = matchingCount * settings.marketingCostPerCustomer;
-  
+
   // Calculate total pages based on current pageLimit
-  const totalPages = preview?.totalCount 
-    ? Math.ceil(preview.totalCount / pageLimit) 
+  const totalPages = preview?.totalCount
+    ? Math.ceil(preview.totalCount / pageLimit)
     : 1;
 
   // ─── Render ─────────────────────────────────────────────
@@ -710,7 +781,7 @@ export default function NewSegmentPage() {
                 >
                   {segmentName}
                 </h1>
-                <button 
+                <button
                   onClick={() => setEditingTitle(true)}
                   className="mt-2 rounded-full p-1 text-slate-300 opacity-0 transition group-hover:opacity-100 hover:bg-slate-100 hover:text-slate-500"
                 >
@@ -756,7 +827,7 @@ export default function NewSegmentPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                 Audience Summary
               </p>
-              <button 
+              <button
                 onClick={() => runPreview(filters)}
                 className="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
               >
@@ -812,21 +883,20 @@ export default function NewSegmentPage() {
                         })() : "—"}
                       </span>
                       <span className="w-8 flex justify-end">
-                        <div 
-                          className={`h-2 w-2 rounded-full ${
-                            c.status === "process" ? "bg-green-500" : 
-                            c.status === "pending" ? "bg-amber-500" : 
-                            "bg-slate-300"
-                          }`} 
+                        <div
+                          className={`h-2 w-2 rounded-full ${c.status === "process" ? "bg-green-500" :
+                              c.status === "pending" ? "bg-amber-500" :
+                                "bg-slate-300"
+                            }`}
                         />
                       </span>
                     </div>
                   ))}
                 </div>
-                
+
                 <div className="mt-8">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full text-xs font-bold uppercase tracking-widest text-slate-600 py-3 rounded-xl border-slate-200"
                   >
                     View All {matchingCount.toLocaleString("id-ID")} Users
@@ -889,11 +959,10 @@ export default function NewSegmentPage() {
                   <span className="tooltip-wrapper">
                     <button
                       onClick={() => toggleConnector(filter.id)}
-                      className={`connector-badge ${
-                        filter.connector === "AND"
+                      className={`connector-badge ${filter.connector === "AND"
                           ? "connector-badge--and"
                           : "connector-badge--or"
-                      }`}
+                        }`}
                     >
                       {filter.connector}
                     </button>
@@ -937,7 +1006,7 @@ export default function NewSegmentPage() {
         })}
 
         {/* Pagination Controls */}
-        {filters.length > 0 && preview && (
+        {/* {filters.length > 0 && preview && (
           <Card className="px-6 py-5 bg-slate-50/50">
             <div className="flex items-center justify-between gap-6">
               <div className="flex items-center gap-6">
@@ -1020,7 +1089,7 @@ export default function NewSegmentPage() {
               </div>
             </div>
           </Card>
-        )}
+        )} */}
 
         {/* Empty state */}
         {filters.length === 0 && (
