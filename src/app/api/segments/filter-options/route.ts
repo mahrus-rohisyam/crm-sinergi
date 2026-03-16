@@ -4,6 +4,7 @@ import {
   fetchWMSClients,
   fetchWMSCustomerServices,
   fetchWMSAdsPlatforms,
+  fetchWMSProducts,
 } from "@/lib/wms-api";
 
 // Standard Indonesian provinces (38) - fallback if WMS API fails
@@ -50,11 +51,43 @@ export async function GET() {
 
     // Extract brands from clients
     let brands: string[] = [];
+    let clientIds: number[] = [];
     if (clients.status === "fulfilled") {
       brands = clients.value.map(c => c.name).sort((a, b) => a.localeCompare(b, "id"));
+      clientIds = clients.value.map(c => c.id);
     } else {
       console.error("Failed to fetch brands:", clients.reason);
       brands = []; // No fallback, let frontend handle empty state
+    }
+
+    // Fetch products (SKUs) for all brands in parallel
+    let skus: string[] = [];
+    if (clientIds.length > 0) {
+      try {
+        const productPromises = clientIds.map(async (clientId) => {
+          try {
+            return await fetchWMSProducts({
+              clientId,
+              bundle: false,
+              status: "published",
+            });
+          } catch (err) {
+            console.error(`Failed to fetch products for client ${clientId}:`, err);
+            return [];
+          }
+        });
+        
+        const allProductsResults = await Promise.all(productPromises);
+        const allProducts = allProductsResults.flat();
+        
+        // Extract unique SKUs and sort
+        skus = Array.from(new Set(allProducts.map(p => p.sku)))
+          .filter(sku => sku && sku.trim() !== "")
+          .sort((a, b) => a.localeCompare(b));
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+        skus = [];
+      }
     }
 
     // Extract CS names from customer services
@@ -109,6 +142,7 @@ export async function GET() {
 
     return NextResponse.json({
       brands, // From /v1/open/clients/list
+      skus, // From /v1/open/products/list (all brands, published, non-bundle)
       provinces,
       cities: orderValues.cities,
       districts: orderValues.districts,
@@ -123,6 +157,7 @@ export async function GET() {
     // Return minimal fallbacks on complete failure
     return NextResponse.json({
       brands: [],
+      skus: [],
       provinces: INDONESIA_PROVINCES,
       cities: [],
       districts: [],

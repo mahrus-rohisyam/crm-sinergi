@@ -293,7 +293,9 @@ export function canUseDirectMetadata(
 export function buildWMSQueryFromFilters(
   filters: Array<{ type: string; config: Record<string, unknown> }>,
 ): WMSQueryParams {
-  const params: WMSQueryParams = {};
+  const params: WMSQueryParams = {
+    status: "process", // Hardcoded: only show processed orders for audience summary
+  };
 
   for (const filter of filters) {
     const c = filter.config;
@@ -682,4 +684,83 @@ export async function fetchWMSProducts(
   throw new Error(
     `WMS API products fetch failed after ${retries} attempts: ${lastError?.message}`,
   );
+}
+
+/**
+ * Product item parsed from product_summary
+ */
+export type ProductItem = {
+  qty: number;
+  sku: string;
+};
+
+/**
+ * Parse product_summary string into array of product items
+ * Format: "1 RG-RJ-20,1 RG-IW-20,1 RG-PG-20"
+ * Returns: [{qty: 1, sku: "RG-RJ-20"}, {qty: 1, sku: "RG-IW-20"}, ...]
+ */
+export function parseProductSummary(productSummary: string): ProductItem[] {
+  if (!productSummary || productSummary.trim() === "") {
+    return [];
+  }
+
+  const items: ProductItem[] = [];
+  const parts = productSummary.split(",");
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+
+    // Match pattern: "number SKU" or just "SKU"
+    const match = trimmed.match(/^(\d+)\s+(.+)$/);
+    
+    if (match) {
+      const [, qtyStr, sku] = match;
+      items.push({
+        qty: parseInt(qtyStr, 10),
+        sku: sku.trim(),
+      });
+    } else {
+      // If no quantity prefix, assume qty = 1
+      items.push({
+        qty: 1,
+        sku: trimmed,
+      });
+    }
+  }
+
+  return items;
+}
+
+/**
+ * Calculate total unique SKU count from product_summary
+ */
+export function getUniqueSkuCount(productSummary: string): number {
+  const items = parseProductSummary(productSummary);
+  const uniqueSkus = new Set(items.map((item) => item.sku));
+  return uniqueSkus.size;
+}
+
+/**
+ * Calculate total quantity from product_summary
+ */
+export function getTotalQuantity(productSummary: string): number {
+  const items = parseProductSummary(productSummary);
+  return items.reduce((sum, item) => sum + item.qty, 0);
+}
+
+/**
+ * Get all unique SKUs from an array of orders
+ */
+export function extractUniqueSKUs(orders: WMSOrder[]): string[] {
+  const skuSet = new Set<string>();
+  
+  for (const order of orders) {
+    if (order.product_summary) {
+      const items = parseProductSummary(order.product_summary);
+      items.forEach((item) => skuSet.add(item.sku));
+    }
+  }
+  
+  return Array.from(skuSet).sort();
 }

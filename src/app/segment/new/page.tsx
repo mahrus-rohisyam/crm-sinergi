@@ -8,6 +8,17 @@ import { MultiSelect } from "@/components/ui/MultiSelect";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import {
+  useSettings,
+  useFilterOptions,
+  useSegmentPreview,
+  useUsers,
+  useEverproStats,
+} from "@/hooks";
+import type { FilterOptions as FilterOptionsType } from "@/hooks/useFilterOptions";
+import { useCreateSegment } from "@/hooks/useSegments";
+import type { CustomerPreview } from "@/hooks/useSegmentPreview";
+
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -35,7 +46,10 @@ type AudiencePreview = {
     customerName: string;
     phoneNumber: string;
     lastPurchase: string;
-    status: string; // added status for UI dots
+    status: string;
+    lastContact?: string | null;
+    engagementStatus?: "contacted" | "not_contacted" | "unknown";
+    blastStatus?: string;
   }>;
   _meta?: {
     method: string;
@@ -43,6 +57,7 @@ type AudiencePreview = {
     sampleSize: number;
     totalPages?: number;
     estimatedApiCallsForFullSync?: number;
+    everproEnriched?: boolean;
   };
 };
 
@@ -54,6 +69,7 @@ type AppSettingsData = {
 
 type FilterOptions = {
   brands: string[];
+  skus: string[];
   provinces: string[];
   cities: string[];
   districts: string[];
@@ -250,14 +266,17 @@ function TransactionFilterForm({ config, onChange, options, settings }: FilterFo
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="sm:col-span-2">
-        <label className="filter-label">SKU</label>
+        <label className="filter-label">SKU (Produk)</label>
         <MultiSelect
-          options={[]} // SKUs are free-text
+          options={options.skus}
           selected={(config.skus as string[]) || []}
           onChange={(v) => onChange({ ...config, skus: v.length > 0 ? v : undefined })}
-          placeholder="Ketik SKU lalu Enter..."
+          placeholder="Pilih SKU produk..."
           allowCustom
         />
+        <p className="text-xs text-slate-500 mt-1">
+          Item summary dihitung berdasarkan jumlah SKU berbeda
+        </p>
       </div>
       <div>
         <label className="filter-label">Min Qty</label>
@@ -497,6 +516,19 @@ function EngagementManagementFilterForm({ config, onChange, options }: FilterFor
 }
 
 function EngagementStatusFilterForm({ config, onChange }: FilterFormProps) {
+  const { stats, isLoading: loading } = useEverproStats();
+
+  // Transform stats to match component state (for backwards compatibility)
+  const syncStats = stats
+    ? {
+        hasData: stats.hasData,
+        lastSyncDisplay: stats.lastSyncDisplay,
+        totalContacts: stats.totalContacts,
+        contactedCount: stats.contactedCount,
+        notContactedCount: stats.notContactedCount,
+      }
+    : null;
+
   return (
     <div className="space-y-4">
       <div>
@@ -504,46 +536,117 @@ function EngagementStatusFilterForm({ config, onChange }: FilterFormProps) {
         <div className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 bg-white">
           <div className="flex-1">
             <p className="text-sm font-medium text-slate-700">Everpro Active</p>
-            <p className="text-xs text-slate-400 mt-0.5">Last sync: 10 minutes ago</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {loading ? "Loading..." : `Last sync: ${syncStats?.lastSyncDisplay || "Never"}`}
+            </p>
+            {!loading && syncStats && syncStats.hasData && (
+              <p className="text-xs text-slate-500 mt-1">
+                {syncStats.totalContacts.toLocaleString()} contacts ({syncStats.notContactedCount.toLocaleString()} not contacted)
+              </p>
+            )}
           </div>
-          <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700">
-            Connected
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+            !loading && syncStats?.hasData
+              ? "bg-green-50 text-green-700"
+              : "bg-gray-50 text-gray-500"
+          }`}>
+            {loading ? "..." : syncStats?.hasData ? "Connected" : "No Data"}
           </span>
         </div>
-      </div>
-
-      <div>
-        <label className="filter-label">Last Contact Period (Weeks)</label>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <input
-              type="number"
-              min={0}
-              value={(config.lastContactWeeksMin as string) || ""}
-              onChange={(e) => onChange({ ...config, lastContactWeeksMin: e.target.value || undefined })}
-              placeholder="Min weeks"
-              className="filter-input"
-            />
-          </div>
-          <div>
-            <input
-              type="number"
-              min={0}
-              value={(config.lastContactWeeksMax as string) || ""}
-              onChange={(e) => onChange({ ...config, lastContactWeeksMax: e.target.value || undefined })}
-              placeholder="Max weeks"
-              className="filter-input"
-            />
-          </div>
-        </div>
-        {config.lastContactWeeksMax && Number(config.lastContactWeeksMax) < 3 ? (
+        {!loading && syncStats && !syncStats.hasData && (
           <div className="mt-2 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
               <line x1="12" y1="9" x2="12" y2="13" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
-            <span className="font-medium">Last Contact &lt; 3 Weeks Ago</span>
+            <span>No Everpro data uploaded yet. Upload data from Everpro Sync page.</span>
+          </div>
+        )}
+
+        {/* Customer Activity Stats */}
+        {!loading && syncStats && syncStats.hasData && (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-lg bg-green-50 px-3 py-2">
+              <p className="text-xs font-medium text-green-600">Contacted</p>
+              <p className="text-lg font-bold text-green-700 mt-0.5">
+                {syncStats.contactedCount.toLocaleString()}
+              </p>
+            </div>
+            <div className="rounded-lg bg-amber-50 px-3 py-2">
+              <p className="text-xs font-medium text-amber-600">Not Contacted</p>
+              <p className="text-lg font-bold text-amber-700 mt-0.5">
+                {syncStats.notContactedCount.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <label className="filter-label flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={(config.showOnlyNotContacted as boolean) || false}
+            onChange={(e) => onChange({ ...config, showOnlyNotContacted: e.target.checked || undefined })}
+            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <span>Show Only Not Contacted Customers</span>
+        </label>
+        <p className="text-xs text-slate-500 mt-1 ml-6">
+          Filter to show only customers who haven&apos;t been contacted via Everpro
+        </p>
+      </div>
+
+      <div>
+        <label className="filter-label">Last Contact Date Range</label>
+        <p className="text-xs text-slate-500 mb-2">
+          Filter customers based on when they were last contacted
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="text-xs font-medium text-slate-600 mb-1.5 block">From Date</label>
+            <input
+              type="date"
+              value={(config.lastContactDateStart as string) || ""}
+              onChange={(e) => onChange({ ...config, lastContactDateStart: e.target.value || undefined })}
+              className="filter-input"
+              max={new Date().toISOString().split('T')[0]}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-600 mb-1.5 block">To Date</label>
+            <input
+              type="date"
+              value={(config.lastContactDateEnd as string) || ""}
+              onChange={(e) => onChange({ ...config, lastContactDateEnd: e.target.value || undefined })}
+              className="filter-input"
+              max={new Date().toISOString().split('T')[0]}
+            />
+          </div>
+        </div>
+        {(config.lastContactDateStart && config.lastContactDateEnd) ? (
+          <div className="mt-2 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <span>
+              Filtering contacts from{" "}
+              {new Date(String(config.lastContactDateStart)).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}{" "}
+              to{" "}
+              {new Date(String(config.lastContactDateEnd)).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </span>
           </div>
         ) : null}
       </div>
@@ -567,9 +670,45 @@ export default function NewSegmentPage() {
   const router = useRouter();
   const { data: session } = useSession();
 
+  // Using custom hooks for data fetching
+  const { settings: appSettings } = useSettings();
+  const { options: filterOptions } = useFilterOptions();
+  const { createSegment, isCreating } = useCreateSegment();
+  const { users } = useUsers();
+  const { preview, isLoading: previewLoading, fetchPreview } = useSegmentPreview();
+
   const [segmentName, setSegmentName] = useState("New Segment");
   const [editingTitle, setEditingTitle] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Local filter state
+  const [filters, setFilters] = useState<FilterModule[]>([]);
+  const [showFilterPicker, setShowFilterPicker] = useState(false);
+  const [pageLimit, setPageLimit] = useState(50);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // App settings with defaults
+  const settings = appSettings || {
+    currency: "IDR",
+    currencySymbol: "Rp",
+    marketingCostPerCustomer: 610,
+  };
+
+  // Filter options with defaults
+  const options: FilterOptionsType = filterOptions || {
+    brands: [],
+    skus: [],
+    provinces: [],
+    cities: [],
+    districts: [],
+    csNames: [],
+    leadSources: [],
+    customerTypes: [],
+    expeditions: [],
+    transactionTypes: [],
+  };
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Focus input when editing starts
   useEffect(() => {
@@ -585,80 +724,21 @@ export default function NewSegmentPage() {
     }
     setEditingTitle(false);
   };
-  const [filters, setFilters] = useState<FilterModule[]>([]);
-  const [showFilterPicker, setShowFilterPicker] = useState(false);
-  const [preview, setPreview] = useState<AudiencePreview | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [pageLimit, setPageLimit] = useState(50); // records per page
-  const [currentPage, setCurrentPage] = useState(1); // current page number
-  const [settings, setSettings] = useState<AppSettingsData>({
-    currency: "IDR",
-    currencySymbol: "Rp",
-    marketingCostPerCustomer: 610,
-  });
-  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
-    brands: [], // Fetched from API: /v1/open/clients/list
-    provinces: [],
-    cities: [],
-    districts: [],
-    csNames: [], // Fetched from API: /v1/open/admin/customer-services
-    leadSources: [], // Fetched from API: /v1/open/social-commerce/ads-platform
-    customerTypes: [], // Fetched from orders sampling
-    expeditions: [],
-    transactionTypes: [], // Fetched from orders sampling
-  });
-
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // ─── Load data ──────────────────────────────────────────
-
-  useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d && !d.error) {
-          setSettings({
-            currency: d.currency || "IDR",
-            currencySymbol: d.currencySymbol || "Rp",
-            marketingCostPerCustomer: d.marketingCostPerCustomer || 610,
-          });
-        }
-      })
-      .catch(() => { });
-
-    fetch("/api/segments/filter-options")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d && !d.error) setFilterOptions(d);
-      })
-      .catch(() => { });
-  }, []);
 
   // ─── Preview (debounced) ────────────────────────────────
 
-  const runPreview = useCallback((currentFilters: FilterModule[]) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      if (currentFilters.length === 0) {
-        setPreview(null);
-        return;
-      }
-      setPreviewLoading(true);
-      try {
-        const res = await fetch("/api/segments/preview", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filters: currentFilters }),
-        });
-        if (res.ok) setPreview(await res.json());
-      } catch {
-        // silent
-      } finally {
-        setPreviewLoading(false);
-      }
-    }, 600);
-  }, []);
+  const runPreview = useCallback(
+    (currentFilters: FilterModule[]) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(async () => {
+        if (currentFilters.length === 0) {
+          return;
+        }
+        await fetchPreview(currentFilters);
+      }, 600);
+    },
+    [fetchPreview]
+  );
 
   useEffect(() => {
     runPreview(filters);
@@ -699,39 +779,30 @@ export default function NewSegmentPage() {
       setEditingTitle(true);
       return;
     }
-    setSaving(true);
-    try {
-      const usersRes = await fetch("/api/users");
-      const users = await usersRes.json();
-      const me = users.find(
-        (u: { email: string }) => u.email === session?.user?.email,
-      );
-      if (!me) {
-        alert("User not found.");
-        setSaving(false);
-        return;
-      }
-      const res = await fetch("/api/segments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: segmentName,
-          description: null,
-          filters,
-          resultCount: preview?.matchingCount || 0,
-          createdById: me.id,
-        }),
-      });
-      if (res.ok) {
-        router.push("/");
-      } else {
-        const data = await res.json();
-        alert(data.error || "Failed to save segment.");
-      }
-    } catch {
-      alert("Network error.");
+
+    // Find current user from users list
+    const me = users?.find(
+      (u: { email: string }) => u.email === session?.user?.email
+    );
+
+    if (!me) {
+      alert("User not found.");
+      return;
     }
-    setSaving(false);
+
+    const result = await createSegment({
+      name: segmentName,
+      description: undefined,
+      filters,
+      resultCount: preview?.matchingCount || 0,
+      createdById: me.id,
+    });
+
+    if (result) {
+      router.push("/");
+    } else {
+      alert("Failed to save segment.");
+    }
   };
 
   // ─── Computed ───────────────────────────────────────────
@@ -800,8 +871,8 @@ export default function NewSegmentPage() {
             <Button variant="outline" onClick={() => router.push("/")}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? (
+            <Button onClick={handleSave} disabled={isCreating}>
+              {isCreating ? (
                 <>
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                   Saving...
@@ -863,35 +934,81 @@ export default function NewSegmentPage() {
             {/* Customer mini-table */}
             {preview && preview.customers.length > 0 && (
               <div className="mt-8 border-t border-slate-100 pt-5">
+                {/* Engagement Summary */}
+                {preview._meta?.everproEnriched && (
+                  <div className="mb-4 rounded-lg bg-blue-50 px-3 py-2 text-xs">
+                    <div className="flex items-center gap-2 text-blue-700">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
+                      </svg>
+                      <span className="font-medium">
+                        {preview.customers.filter((c: CustomerPreview) => c.engagementStatus === "not_contacted").length} of {preview.customers.length} need follow-up
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-3 px-1">
                   <span className="flex-[2]">Name</span>
                   <span className="flex-1 text-center">Last Pur.</span>
+                  <span className="flex-1 text-center">Last Contact</span>
                   <span className="w-8 text-right">Status</span>
                 </div>
                 <div className="space-y-4 text-xs font-medium">
-                  {preview.customers.slice(0, 7).map((c, i) => (
-                    <div key={i} className="flex items-center justify-between px-1 hover:bg-slate-50 py-1 rounded-lg transition-colors cursor-default">
-                      <span className="text-slate-800 truncate flex-[2]">
-                        {c.customerName || "—"}
-                      </span>
-                      <span className="text-slate-500 flex-1 text-center font-normal">
-                        {c.lastPurchase ? (() => {
-                          const diff = Date.now() - new Date(c.lastPurchase).getTime();
-                          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                          if (days < 7) return `${days}d ago`;
-                          return `${Math.floor(days / 7)}w ago`;
-                        })() : "—"}
-                      </span>
-                      <span className="w-8 flex justify-end">
-                        <div
-                          className={`h-2 w-2 rounded-full ${c.status === "process" ? "bg-green-500" :
-                              c.status === "pending" ? "bg-amber-500" :
-                                "bg-slate-300"
-                            }`}
-                        />
-                      </span>
-                    </div>
-                  ))}
+                  {preview.customers.slice(0, 7).map((c: CustomerPreview, i: number) => {
+                    // Calculate engagement status indicator color (using stable date)
+                    const now = new Date();
+                    let engagementColor = "bg-gray-300"; // default: never contacted
+                    if (c.lastContact) {
+                      const weeksSince = (now.getTime() - new Date(c.lastContact).getTime()) / (1000 * 60 * 60 * 24 * 7);
+                      if (weeksSince < 4) engagementColor = "bg-green-500"; // recent
+                      else if (weeksSince < 8) engagementColor = "bg-yellow-500"; // stale
+                      else engagementColor = "bg-red-500"; // needs attention
+                    }
+
+                    return (
+                      <div key={i} className="flex items-center justify-between px-1 hover:bg-slate-50 py-1 rounded-lg transition-colors cursor-default">
+                        <span className="text-slate-800 truncate flex-[2]">
+                          {c.customerName || "—"}
+                        </span>
+                        <span className="text-slate-500 flex-1 text-center font-normal">
+                          {c.lastPurchase ? (() => {
+                            const diff = new Date().getTime() - new Date(c.lastPurchase).getTime();
+                            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                            if (days < 7) return `${days}d ago`;
+                            return `${Math.floor(days / 7)}w ago`;
+                          })() : "—"}
+                        </span>
+                        <span className="text-slate-500 flex-1 text-center font-normal">
+                          {c.lastContact ? (() => {
+                            const diff = new Date().getTime() - new Date(c.lastContact).getTime();
+                            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                            if (days < 7) return `${days}d ago`;
+                            return `${Math.floor(days / 7)}w ago`;
+                          })() : (
+                            <span className="text-slate-400">Never</span>
+                          )}
+                        </span>
+                        <span className="w-8 flex justify-end items-center gap-1">
+                          {/* Engagement indicator (left) */}
+                          {preview._meta?.everproEnriched && (
+                            <div
+                              className={`h-2 w-2 rounded-full ${engagementColor}`}
+                              title={c.engagementStatus === "contacted" ? "Contacted" : "Not Contacted"}
+                            />
+                          )}
+                          {/* Order status indicator (right) */}
+                          <div
+                            className={`h-2 w-2 rounded-full ${c.status === "process" ? "bg-blue-500" :
+                                c.status === "pending" ? "bg-amber-500" :
+                                  "bg-slate-300"
+                              }`}
+                          />
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="mt-8">
@@ -996,7 +1113,7 @@ export default function NewSegmentPage() {
                   <FormComp
                     config={filter.config}
                     onChange={(c) => updateFilterConfig(filter.id, c)}
-                    options={filterOptions}
+                    options={options}
                     settings={settings}
                   />
                 </div>

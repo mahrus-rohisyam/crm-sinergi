@@ -7,6 +7,8 @@ import {
   fetchOrdersEfficiently,
   type WMSOrder,
 } from "@/lib/wms-api";
+import { prisma } from "@/lib/prisma";
+import { getPhoneNumberVariants } from "@/lib/everpro-parser";
 
 type FilterModule = {
   id: string;
@@ -14,6 +16,140 @@ type FilterModule = {
   connector: "AND" | "OR";
   config: Record<string, unknown>;
 };
+
+type EnrichedCustomer = {
+  customerName: string;
+  phoneNumber: string;
+  lastPurchase: string;
+  status: string;
+  lastContact?: string | null;
+  engagementStatus: "contacted" | "not_contacted" | "unknown";
+  blastStatus?: string;
+  everproData?: {
+    lastBlastDate: Date | null;
+    blastStatus: string;
+    csName: string | null;
+  };
+};
+
+/**
+ * Enrich customers with Everpro engagement data
+ */
+async function enrichWithEverproData(
+  customers: Array<{
+    customerName: string;
+    phoneNumber: string;
+    lastPurchase: string;
+    status: string;
+  }>,
+): Promise<EnrichedCustomer[]> {
+  if (customers.length === 0) return [];
+
+  // Collect all phone number variants for matching
+  const phoneVariantsMap = new Map<string, string[]>();
+  for (const customer of customers) {
+    const variants = getPhoneNumberVariants(customer.phoneNumber);
+    phoneVariantsMap.set(customer.phoneNumber, variants);
+  }
+
+  // Get all unique phone variants to query
+  const allVariants = Array.from(
+    new Set(
+      Array.from(phoneVariantsMap.values()).flat(),
+    ),
+  );
+
+  // Query Everpro contacts by phone number (match any variant)
+  const everproContacts = await prisma.everproContact.findMany({
+    where: {
+      phoneNumber: {
+        in: allVariants,
+      },
+    },
+  });
+
+  // Create lookup map (phone variant -> Everpro contact)
+  const everproMap = new Map(
+    everproContacts.map((c) => [c.phoneNumber, c]),
+  );
+
+  // Enrich each customer
+  return customers.map((customer) => {
+    const variants = phoneVariantsMap.get(customer.phoneNumber) || [];
+    
+    // Try to find Everpro contact using any variant
+    let everproContact = null;
+    for (const variant of variants) {
+      everproContact = everproMap.get(variant);
+      if (everproContact) break;
+    }
+
+    if (everproContact) {
+      return {
+        ...customer,
+        lastContact: everproContact.lastBlastDate?.toISOString() || null,
+        engagementStatus:
+          everproContact.blastStatus === "Sudah"
+            ? "contacted"
+            : "not_contacted",
+        blastStatus: everproContact.blastStatus,
+        everproData: {
+          lastBlastDate: everproContact.lastBlastDate,
+          blastStatus: everproContact.blastStatus,
+          csName: everproContact.csName,
+        },
+      };
+    } else {
+      // Not found in Everpro - treat as not contacted
+      return {
+        ...customer,
+        lastContact: null,
+        engagementStatus: "not_contacted",
+        blastStatus: "Belum",
+      };
+    }
+  });
+}
+
+/**
+ * Filter enriched customer based on engagement_status filter
+ */
+function matchesEngagementStatusFilter(
+  customer: EnrichedCustomer,
+  config: Record<string, unknown>,
+): boolean {
+  // Check blast status filter
+  const showOnlyNotContacted = config.showOnlyNotContacted as boolean | undefined;
+  if (showOnlyNotContacted && customer.engagementStatus !== "not_contacted") {
+    return false;
+  }
+
+  // Check last contact date range
+  const dateStart = config.lastContactDateStart as string | undefined;
+  const dateEnd = config.lastContactDateEnd as string | undefined;
+
+  if ((dateStart || dateEnd) && customer.lastContact) {
+    const lastContactDate = new Date(customer.lastContact);
+    
+    // Check if last contact is within the specified date range
+    if (dateStart) {
+      const startDate = new Date(dateStart);
+      startDate.setHours(0, 0, 0, 0); // Start of day
+      if (lastContactDate < startDate) return false;
+    }
+    
+    if (dateEnd) {
+      const endDate = new Date(dateEnd);
+      endDate.setHours(23, 59, 59, 999); // End of day
+      if (lastContactDate > endDate) return false;
+    }
+  } else if (dateStart || dateEnd) {
+    // No last contact date but filter requires it - exclude
+    return false;
+  }
+
+  return true;
+}
 
 /**
  * Filter WMS order based on a single filter module (client-side filtering)
@@ -149,6 +285,11 @@ function matchesFilterCondition(
         return false;
       return true;
     }
+    case "engagement_status": {
+      // engagement_status filtering is applied AFTER enrichment
+      // Always return true here, will be filtered later
+      return true;
+    }
     default:
       return true;
   }
@@ -228,22 +369,38 @@ export async function POST(req: Request) {
         }
       }
 
+      // Enrich with Everpro data
+      let enrichedCustomers = await enrichWithEverproData(uniqueCustomers);
+
+      // Apply engagement_status filter if present
+      const engagementFilter = filters.find((f) => f.type === "engagement_status");
+      if (engagementFilter) {
+        enrichedCustomers = enrichedCustomers.filter((customer) =>
+          matchesEngagementStatusFilter(customer, engagementFilter.config),
+        );
+      }
+
+      const finalMatchingCount = engagementFilter
+        ? enrichedCustomers.length
+        : matchingCount;
+
       const percentage =
         totalCount > 0
-          ? Math.round((matchingCount / totalCount) * 10000) / 100
+          ? Math.round((finalMatchingCount / totalCount) * 10000) / 100
           : 0;
 
       return NextResponse.json({
-        matchingCount,
+        matchingCount: finalMatchingCount,
         totalCount,
         percentage,
-        customers: uniqueCustomers,
+        customers: enrichedCustomers,
         _meta: {
           method: "direct_metadata",
           accurate: true,
           sampleSize: response.data.length,
           totalPages: filteredMetadata.total_page,
           estimatedApiCallsForFullSync: filteredMetadata.total_page,
+          everproEnriched: true,
         },
       });
     }
@@ -283,9 +440,20 @@ export async function POST(req: Request) {
       }
     }
 
+    // Enrich with Everpro data
+    let enrichedCustomers = await enrichWithEverproData(uniqueCustomers);
+
+    // Apply engagement_status filter if present
+    const engagementFilter = filters.find((f) => f.type === "engagement_status");
+    if (engagementFilter) {
+      enrichedCustomers = enrichedCustomers.filter((customer) =>
+        matchesEngagementStatusFilter(customer, engagementFilter.config),
+      );
+    }
+
     // Calculate estimated matching count based on sample
     const sampleSize = sampleOrders.length;
-    const matchingInSample = uniqueCustomers.length;
+    const matchingInSample = enrichedCustomers.length;
 
     let estimatedMatchingCount: number;
     if (filters.length === 0) {
@@ -309,13 +477,14 @@ export async function POST(req: Request) {
       matchingCount: estimatedMatchingCount,
       totalCount: totalCount,
       percentage,
-      customers: uniqueCustomers.slice(0, 50), // limit to top 50 for preview
+      customers: enrichedCustomers.slice(0, 50), // limit to top 50 for preview
       _meta: {
         method: "sampling",
         accurate: false,
         sampleSize,
         matchingInSample,
         samplePercentage: Math.round((sampleSize / totalCount) * 10000) / 100,
+        everproEnriched: true,
       },
     });
   } catch (error) {

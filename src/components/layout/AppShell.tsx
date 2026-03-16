@@ -2,15 +2,10 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { logout } from "@/app/login/actions";
-
-type AppSettings = {
-  appName: string;
-  logoUrl: string | null;
-  faviconUrl: string | null;
-};
+import { useSettings } from "@/hooks";
 
 const navItems = [
   {
@@ -64,43 +59,28 @@ type AppShellProps = {
 
 export function AppShell({ active, header, children, rightAside }: AppShellProps) {
   const { data: session } = useSession();
-  const [appSettings, setAppSettings] = useState<AppSettings>({
-    appName: "CRM Suite",
-    logoUrl: null,
-    faviconUrl: null,
-  });
+  const { settings, isLoading } = useSettings();
 
-  // Load app settings (name, logo, favicon) from DB
+  // Dynamically update browser favicon and title when settings change
   useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data && !data.error) {
-          setAppSettings({
-            appName: data.appName || "CRM Suite",
-            logoUrl: data.logoUrl || null,
-            faviconUrl: data.faviconUrl || null,
-          });
+    if (!settings) return;
 
-          // Dynamically update browser favicon
-          if (data.faviconUrl) {
-            let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
-            if (!link) {
-              link = document.createElement("link");
-              link.rel = "icon";
-              document.head.appendChild(link);
-            }
-            link.href = data.faviconUrl;
-          }
+    // Update favicon
+    if (settings.faviconUrl) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+      }
+      link.href = settings.faviconUrl;
+    }
 
-          // Dynamically update page title
-          if (data.appName) {
-            document.title = data.appName;
-          }
-        }
-      })
-      .catch(() => {});
-  }, []);
+    // Update page title
+    if (settings.appName) {
+      document.title = settings.appName;
+    }
+  }, [settings]);
 
   // Derive user info from session
   const userName = session?.user?.name || "User";
@@ -112,6 +92,10 @@ export function AppShell({ active, header, children, rightAside }: AppShellProps
     .slice(0, 2)
     .toUpperCase();
 
+  // Use settings or defaults
+  const appName = settings?.appName || "CRM Suite";
+  const logoUrl = settings?.logoUrl || null;
+
   return (
     <div className="h-screen overflow-hidden bg-[var(--app-bg)] text-[var(--text-strong)]">
       <div className="flex h-full">
@@ -119,9 +103,9 @@ export function AppShell({ active, header, children, rightAside }: AppShellProps
         <aside className="flex w-72 shrink-0 flex-col border-r border-[var(--border)] bg-white/85 backdrop-blur">
           {/* Brand — dynamic from settings - Top */}
           <div className="flex items-center gap-3 px-6 py-6">
-            {appSettings.logoUrl ? (
+            {logoUrl ? (
               <img
-                src={appSettings.logoUrl}
+                src={logoUrl}
                 alt="Logo"
                 className="h-11 w-11 rounded-2xl object-contain"
               />
@@ -134,7 +118,7 @@ export function AppShell({ active, header, children, rightAside }: AppShellProps
               </div>
             )}
             <div>
-              <p className="text-base font-semibold">{appSettings.appName}</p>
+              <p className="text-base font-semibold">{appName}</p>
               <p className="text-xs text-slate-500">Enterprise</p>
             </div>
           </div>
