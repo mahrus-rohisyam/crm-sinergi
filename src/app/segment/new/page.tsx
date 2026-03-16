@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { MultiSelect } from "@/components/ui/MultiSelect";
+import { Modal } from "@/components/ui/Modal";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -686,6 +687,7 @@ export default function NewSegmentPage() {
   const [showFilterPicker, setShowFilterPicker] = useState(false);
   const [pageLimit, setPageLimit] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showAllUsersModal, setShowAllUsersModal] = useState(false);
 
   // App settings with defaults
   const settings = appSettings || {
@@ -918,6 +920,17 @@ export default function NewSegmentPage() {
                 {matchingCount.toLocaleString("id-ID")}
               </p>
               <p className="text-sm font-medium text-slate-500">Matching Users</p>
+              
+              {preview?._meta && !preview._meta.accurate && (
+                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                  <span>Estimated count (sampled data)</span>
+                </p>
+              )}
 
               {/* Progress bar */}
               <div className="mt-5 h-2 w-full rounded-full bg-slate-100">
@@ -936,15 +949,29 @@ export default function NewSegmentPage() {
               <div className="mt-8 border-t border-slate-100 pt-5">
                 {/* Engagement Summary */}
                 {preview._meta?.everproEnriched && (
-                  <div className="mb-4 rounded-lg bg-blue-50 px-3 py-2 text-xs">
-                    <div className="flex items-center gap-2 text-blue-700">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                        <polyline points="22 4 12 14.01 9 11.01" />
-                      </svg>
-                      <span className="font-medium">
-                        {preview.customers.filter((c: CustomerPreview) => c.engagementStatus === "not_contacted").length} of {preview.customers.length} need follow-up
-                      </span>
+                  <div className="mb-4 space-y-1">
+                    <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="16" x2="12" y2="12" />
+                          <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                        <span>
+                          Preview: Showing <strong>{preview.customers.length}</strong> of <strong>{matchingCount.toLocaleString("id-ID")}</strong> total users
+                        </span>
+                      </div>
+                    </div>
+                    <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs">
+                      <div className="flex items-center gap-2 text-amber-700">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                          <polyline points="22 4 12 14.01 9 11.01" />
+                        </svg>
+                        <span className="font-medium">
+                          {preview.customers.filter((c: CustomerPreview) => c.engagementStatus === "not_contacted").length} out of {preview.customers.length} shown need follow-up
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -976,6 +1003,7 @@ export default function NewSegmentPage() {
                           {c.lastPurchase ? (() => {
                             const diff = new Date().getTime() - new Date(c.lastPurchase).getTime();
                             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                            if (days === 0) return "Today";
                             if (days < 7) return `${days}d ago`;
                             return `${Math.floor(days / 7)}w ago`;
                           })() : "—"}
@@ -984,6 +1012,7 @@ export default function NewSegmentPage() {
                           {c.lastContact ? (() => {
                             const diff = new Date().getTime() - new Date(c.lastContact).getTime();
                             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                            if (days === 0) return "Today";
                             if (days < 7) return `${days}d ago`;
                             return `${Math.floor(days / 7)}w ago`;
                           })() : (
@@ -1015,6 +1044,7 @@ export default function NewSegmentPage() {
                   <Button
                     variant="outline"
                     className="w-full text-xs font-bold uppercase tracking-widest text-slate-600 py-3 rounded-xl border-slate-200"
+                    onClick={() => setShowAllUsersModal(true)}
                   >
                     View All {matchingCount.toLocaleString("id-ID")} Users
                   </Button>
@@ -1287,6 +1317,180 @@ export default function NewSegmentPage() {
           </div>
         </>
       )}
+
+      {/* ─── All Users Modal ─── */}
+      <Modal
+        isOpen={showAllUsersModal}
+        onClose={() => setShowAllUsersModal(false)}
+        title={`All ${matchingCount.toLocaleString("id-ID")} Matching Users`}
+        size="xl"
+      >
+        {preview && preview.customers.length > 0 ? (
+          <div className="space-y-4">
+            {/* Stats Summary */}
+            {preview._meta?.everproEnriched && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg bg-green-50 px-4 py-3">
+                  <p className="text-xs font-medium text-green-600 uppercase tracking-wider">Contacted</p>
+                  <p className="text-2xl font-bold text-green-700 mt-1">
+                    {preview.customers.filter((c: CustomerPreview) => c.engagementStatus === "contacted").length}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-amber-50 px-4 py-3">
+                  <p className="text-xs font-medium text-amber-600 uppercase tracking-wider">Need Follow-up</p>
+                  <p className="text-2xl font-bold text-amber-700 mt-1">
+                    {preview.customers.filter((c: CustomerPreview) => c.engagementStatus === "not_contacted").length}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Note about sample */}
+            {preview.customers.length < matchingCount && (
+              <div className="rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                <div className="flex items-start gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 shrink-0">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  <span>
+                    Showing preview of <strong>{preview.customers.length}</strong> out of <strong>{matchingCount.toLocaleString("id-ID")}</strong> matching users. 
+                    Full list will be available after saving segment.
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Customer Table */}
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <tr>
+                    <th className="px-4 py-3 text-left">#</th>
+                    <th className="px-4 py-3 text-left">Customer Name</th>
+                    <th className="px-4 py-3 text-left">Phone Number</th>
+                    <th className="px-4 py-3 text-center">Last Purchase</th>
+                    <th className="px-4 py-3 text-center">Last Contact</th>
+                    <th className="px-4 py-3 text-center">Order Status</th>
+                    {preview._meta?.everproEnriched && (
+                      <th className="px-4 py-3 text-center">Engagement</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {preview.customers.map((customer: CustomerPreview, index: number) => {
+                    // Calculate engagement status indicator color
+                    const now = new Date();
+                    let engagementColor = "bg-gray-300";
+                    let engagementLabel = "Never Contacted";
+                    if (customer.lastContact) {
+                      const weeksSince = (now.getTime() - new Date(customer.lastContact).getTime()) / (1000 * 60 * 60 * 24 * 7);
+                      if (weeksSince < 4) {
+                        engagementColor = "bg-green-500";
+                        engagementLabel = "Recent";
+                      } else if (weeksSince < 8) {
+                        engagementColor = "bg-yellow-500";
+                        engagementLabel = "Stale";
+                      } else {
+                        engagementColor = "bg-red-500";
+                        engagementLabel = "Needs Attention";
+                      }
+                    }
+
+                    const formatTimeAgo = (dateStr: string) => {
+                      const diff = new Date().getTime() - new Date(dateStr).getTime();
+                      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                      if (days === 0) return "Today";
+                      if (days === 1) return "Yesterday";
+                      if (days < 7) return `${days}d ago`;
+                      if (days < 30) return `${Math.floor(days / 7)}w ago`;
+                      if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+                      return `${Math.floor(days / 365)}y ago`;
+                    };
+
+                    const formatFullDate = (dateStr: string) => {
+                      return new Date(dateStr).toLocaleDateString("id-ID", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      });
+                    };
+
+                    return (
+                      <tr key={index} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-4 py-3 text-slate-500 font-medium">{index + 1}</td>
+                        <td className="px-4 py-3 font-medium text-slate-900">
+                          {customer.customerName || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 font-mono text-xs">
+                          {customer.phoneNumber || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-center text-slate-600" title={customer.lastPurchase ? formatFullDate(customer.lastPurchase) : undefined}>
+                          {customer.lastPurchase ? formatTimeAgo(customer.lastPurchase) : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-center text-slate-600" title={customer.lastContact ? formatFullDate(customer.lastContact) : undefined}>
+                          {customer.lastContact ? formatTimeAgo(customer.lastContact) : (
+                            <span className="text-slate-400">Never</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                            customer.status === "process" 
+                              ? "bg-blue-50 text-blue-700"
+                              : customer.status === "pending"
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-slate-100 text-slate-600"
+                          }`}>
+                            {customer.status || "unknown"}
+                          </span>
+                        </td>
+                        {preview._meta?.everproEnriched && (
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <div
+                                className={`h-2.5 w-2.5 rounded-full ${engagementColor}`}
+                                title={engagementLabel}
+                              />
+                              <span className="text-xs text-slate-500">{engagementLabel}</span>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Export actions (placeholder) */}
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-xs text-slate-500">
+                Save segment to export full customer list
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled
+                className="text-xs"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Export CSV
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="py-12 text-center text-slate-500">
+            <p>No customers found matching the current filters.</p>
+          </div>
+        )}
+      </Modal>
     </AppShell>
   );
 }

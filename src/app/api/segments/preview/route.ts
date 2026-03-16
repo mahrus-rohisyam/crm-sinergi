@@ -331,6 +331,10 @@ export async function POST(req: Request) {
     const totalMetadata = await getWMSMetadata({ length: 1 });
     const totalCount = totalMetadata.count;
 
+    // Get filtered base count (with status and other WMS-supported filters)
+    const baseFilteredMetadata = await getWMSMetadata(wmsParams);
+    const baseFilteredCount = baseFilteredMetadata.count;
+
     // Check if we can use direct metadata for accurate count (filters fully supported by WMS API)
     const useDirectMetadata = canUseDirectMetadata(filters);
 
@@ -460,9 +464,9 @@ export async function POST(req: Request) {
       // No filters - all customers match
       estimatedMatchingCount = totalCount;
     } else if (sampleSize > 0) {
-      // Use ratio from sample to estimate total matches
+      // Use ratio from sample to estimate matches within filtered base
       const ratio = matchingInSample / sampleSize;
-      estimatedMatchingCount = Math.round(totalCount * ratio);
+      estimatedMatchingCount = Math.round(baseFilteredCount * ratio);
     } else {
       // Not enough data to estimate
       estimatedMatchingCount = matchingInSample;
@@ -483,7 +487,8 @@ export async function POST(req: Request) {
         accurate: false,
         sampleSize,
         matchingInSample,
-        samplePercentage: Math.round((sampleSize / totalCount) * 10000) / 100,
+        baseFilteredCount, // Count with status & WMS-level filters applied
+        samplePercentage: Math.round((sampleSize / baseFilteredCount) * 10000) / 100,
         everproEnriched: true,
       },
     });
