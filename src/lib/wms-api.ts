@@ -552,7 +552,7 @@ export async function fetchWMSAdsPlatforms(
     throw new Error("WMS_API_KEY not configured");
   }
 
-  const url = new URL(`${baseUrl}/v1/open/social-commerce/ads-platform`);
+  const url = new URL(`${baseUrl}/v1/open/social-commerce/ads/platform`);
   if (clientId) {
     url.searchParams.set("client_id", String(clientId));
   }

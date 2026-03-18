@@ -92,6 +92,10 @@ export default function EverproSyncPage() {
   };
 
   const deleteHistoryItem = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this file and its history? This action cannot be undone.")) {
+      return;
+    }
+
     try {
       const res = await fetch(`/api/everpro-sync/history?id=${id}`, {
         method: "DELETE",
@@ -99,6 +103,9 @@ export default function EverproSyncPage() {
       if (res.ok) {
         showToast("File removed from history.", "success");
         fetchHistory(pagination.page);
+      } else {
+        const err = await res.json();
+        showToast(err.error || "Failed to delete.", "error");
       }
     } catch (error) {
       showToast("Failed to delete.", "error");

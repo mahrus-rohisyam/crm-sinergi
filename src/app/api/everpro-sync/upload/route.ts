@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     const fileName = `${Date.now()}-${file.name}`;
     const publicDir = path.join(process.cwd(), "public", "everpro-sync");
     const filePath = path.join(publicDir, fileName);
