@@ -131,3 +131,52 @@ export function useCreateSegment() {
     error,
   };
 }
+
+/**
+ * Hook to update an existing segment
+ */
+export function useUpdateSegment() {
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const updateSegment = async (
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      filters?: unknown;
+      resultCount?: number;
+    }
+  ): Promise<Segment | null> => {
+    try {
+      setIsUpdating(true);
+      setError(null);
+
+      const response = await fetch(`/api/segments/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const segment = await response.json();
+      return segment;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      console.error("Failed to update segment:", error);
+      return null;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return {
+    updateSegment,
+    isUpdating,
+    error,
+  };
+}

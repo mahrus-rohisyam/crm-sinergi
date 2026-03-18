@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { useRouter } from "next/navigation";
+import { useSegmentExport } from "@/hooks";
 
 type Segment = {
   id: string;
@@ -153,10 +154,12 @@ const COST_PER_CUSTOMER = 610;
 
 export default function CampaignPage() {
   const router = useRouter();
+  const { exportSegment } = useSegmentExport();
   const [segments, setSegments] = useState<Segment[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [costPerCustomer, setCostPerCustomer] = useState(COST_PER_CUSTOMER);
+  const [exportingSegmentId, setExportingSegmentId] = useState<string | null>(null);
 
   const fetchSegments = useCallback(async () => {
     try {
@@ -208,8 +211,15 @@ export default function CampaignPage() {
 
   const handleDownload = async (segment: Segment, e: React.MouseEvent) => {
     e.stopPropagation();
-    // TODO: Implement CSV export for this segment
-    alert(`Export segment "${segment.name}" (${segment.resultCount} customers) — coming soon`);
+    setExportingSegmentId(segment.id);
+    try {
+      const result = await exportSegment(segment.id, segment.name);
+      if (!result.success) {
+        alert(`Export failed: ${result.error}`);
+      }
+    } finally {
+      setExportingSegmentId(null);
+    }
   };
 
   const handleEdit = (segmentId: string, e: React.MouseEvent) => {
@@ -391,10 +401,33 @@ export default function CampaignPage() {
                             <Tooltip label="Download CSV">
                               <button
                                 onClick={(e) => handleDownload(segment, e)}
-                                className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-600"
+                                disabled={exportingSegmentId !== null}
+                                className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
                                 id={`download-segment-${segment.id}`}
                               >
-                                <DownloadIcon />
+                                {exportingSegmentId === segment.id ? (
+                                  <svg
+                                    className="h-5 w-5 animate-spin"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                    />
+                                    <path
+                                      className="opacity-75"
+                                      fill="currentColor"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    />
+                                  </svg>
+                                ) : (
+                                  <DownloadIcon />
+                                )}
                               </button>
                             </Tooltip>
                             <Tooltip label="Delete">
