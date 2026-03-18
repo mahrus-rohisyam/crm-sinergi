@@ -41,11 +41,10 @@ const TRANSACTION_TYPES = ["COD", "Transfer"];
  */
 export async function GET() {
   try {
-    // Fetch data from dedicated endpoints in parallel for efficiency
-    const [clients, customerServices, adsPlatforms, wmsValues] = await Promise.allSettled([
+    // Fetch clients and customer services first (these don't need client_id)
+    const [clients, customerServices, wmsValues] = await Promise.allSettled([
       fetchWMSClients(),
       fetchWMSCustomerServices(), // Fetch all CS across all brands
-      fetchWMSAdsPlatforms(), // Fetch all ads platforms across all brands
       getDistinctFilterValues(10), // Sample from orders for other fields
     ]);
 
@@ -60,8 +59,9 @@ export async function GET() {
       brands = []; // No fallback, let frontend handle empty state
     }
 
-    // Fetch products (SKUs) for all brands in parallel
+    // Fetch products and ads platforms for all brands in parallel (both need client_id)
     let skus: string[] = [];
+    let leadSources: string[] = [];
     if (clientIds.length > 0) {
       try {
         const productPromises = clientIds.map(async (clientId) => {
@@ -77,16 +77,35 @@ export async function GET() {
           }
         });
         
-        const allProductsResults = await Promise.all(productPromises);
+        const adsPlatformPromises = clientIds.map(async (clientId) => {
+          try {
+            return await fetchWMSAdsPlatforms(clientId);
+          } catch (err) {
+            console.error(`Failed to fetch ads platforms for client ${clientId}:`, err);
+            return [];
+          }
+        });
+        
+        const [allProductsResults, allAdsPlatformsResults] = await Promise.all([
+          Promise.all(productPromises),
+          Promise.all(adsPlatformPromises),
+        ]);
         const allProducts = allProductsResults.flat();
+        const allAdsPlatforms = allAdsPlatformsResults.flat();
         
         // Extract unique SKUs and sort
         skus = Array.from(new Set(allProducts.map(p => p.sku)))
           .filter(sku => sku && sku.trim() !== "")
           .sort((a, b) => a.localeCompare(b));
+        
+        // Extract unique lead sources (ads platforms) and sort
+        leadSources = Array.from(new Set(allAdsPlatforms.map(ap => ap.name)))
+          .filter(name => name && name.trim() !== "")
+          .sort((a, b) => a.localeCompare(b, "id"));
       } catch (error) {
-        console.error("Failed to fetch products:", error);
+        console.error("Failed to fetch products or ads platforms:", error);
         skus = [];
+        leadSources = [];
       }
     }
 
@@ -100,18 +119,6 @@ export async function GET() {
     } else {
       console.error("Failed to fetch customer services:", customerServices.reason);
       csNames = [];
-    }
-
-    // Extract lead sources from ads platforms
-    let leadSources: string[] = [];
-    if (adsPlatforms.status === "fulfilled") {
-      leadSources = adsPlatforms.value
-        .map(ap => ap.name)
-        .filter((name, index, arr) => arr.indexOf(name) === index) // Deduplicate
-        .sort((a, b) => a.localeCompare(b, "id"));
-    } else {
-      console.error("Failed to fetch ads platforms:", adsPlatforms.reason);
-      leadSources = [];
     }
 
     // Get values from WMS orders sampling
