@@ -194,7 +194,37 @@ Total Transaksi = Harga Barang + Ongkir + Cod Fee - Disc Barang - Discount Ongki
 
 ## Product Parsing Rules
 
-### Pattern Recognition
+### ⚠️ Important: SKU Mapping Strategy (Updated 2026)
+
+**WMS API menggunakan full SKU codes** yang berbeda dari kolom template Excel.
+
+**Problem:**
+- WMS API: `RG-CEH-100` (Ceramides Expert Hydrating Toner)
+- Template column: `RGTH` (Toner Hydrating)
+
+**Solution:** Export menggunakan **explicit SKU mapping table**
+
+Lihat detail lengkap di [product-parser.md](./product-parser.md)
+
+### SKU to Column Mapping
+
+| WMS SKU | Template Column | Description |
+|---------|----------------|-------------|
+| RG-CEH-100 | RGTH | Ceramides Hydrating → Toner Hydrating |
+| RG-AH-100 | RGTH | Old hydrating variant → Toner Hydrating |
+| RG-IW-20 | RGNC | Intensive Whitening → Night Cream |
+| RG-PG-20 | RGSM | Perfect Glowing → Serum |
+| RG-CB-30 | RGMO | Ceramide Barrier → Moisturizer |
+| RG-SL-30 | RGSR | Sunscreen Luxury → Sunscreen |
+| RG-PCH | RGPCH | Pouch (direct match) |
+| RG-SPC-90 | RGFW | Skin Purifying Cleansing → Face Wash |
+| RG-TE-20 | OTHER | Triple Exfoliate → OTHER |
+| RG-UGSM | OTHER | Ultimate Glow Sheetmask → OTHER |
+| RG-DA-15 | OTHER | Double Action Spot Gel → OTHER |
+| RG-SCR | RGSR | Old scrub code → Sunscreen |
+| RG-RJ-20 | OTHER | Unknown/discontinued product |
+
+### Pattern Recognition (Legacy Products)
 
 Product summary format: `{qty} {BRAND}-{CODE}-{VARIANT}`
 

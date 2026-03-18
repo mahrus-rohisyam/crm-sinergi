@@ -51,12 +51,37 @@ function MyComponent() {
 
 **Fungsi:**
 - Mengambil segment dari database berdasarkan ID
-- Parse filters dari segment
+- Parse filters dari segment (handle array/wrapped/single format)
 - Menentukan brand dari filter (default: Amura jika tidak ada brand filter)
-- Fetch orders yang match dengan semua filters
+- **Build WMS query params** dengan `buildWMSQueryFromFilters()`
+- Fetch orders dari WMS API (basic filtering)
+- **Client-side filtering** dengan `matchesAllFilters()`:
+  - Product SKU filter (contains check)
+  - Quantity filter (>=, <=, ==)
+  - Demographics filter (city, district, province)
+  - Customer type filter (new/repeat/loyal)
+  - Respect AND/OR connector between filters
 - Enrich dengan data engagement dari Everpro (jika ada engagement filter)
+- **Post-enrichment filtering** dengan `matchesEngagementStatusFilter()`
+- Parse products dengan SKU mapping table
 - Load template Excel sesuai brand
 - Generate file Excel dan return sebagai download
+
+**Key Functions:**
+```typescript
+function matchesFilterCondition(order: any, filter: any): boolean {
+  // Check single filter condition (product, quantity, city, etc)
+}
+
+function matchesAllFilters(order: any, filters: any[]): boolean {
+  // Apply filters with AND/OR connectors
+  // Returns true if order matches filter group
+}
+
+function matchesEngagementStatusFilter(order: any, config: any): boolean {
+  // Check engagement status after enrichment
+}
+```
 
 ### 2. React Hook
 **File:** `/src/hooks/useSegmentExport.ts`
@@ -74,29 +99,69 @@ function MyComponent() {
 **Update:**
 - Import `useSegmentExport` hook
 - Implementasi `handleDownload` untuk call API export
+- **Per-button loading state:** Gunakan `exportingSegmentId` (bukan `isExporting` global)
+- Hanya button yang diklik yang menampilkan spinner
+- Semua button disabled selama export untuk prevent multiple requests
 - Update UI button download dengan loading state (spinner animation)
-- Disabled button saat sedang export
 
 ## Alur Kerja Export
+
+### Export Pipeline (Updated 2026)
+
+Export telah diperbarui dengan **two-stage filtering approach**:
+
+1. **WMS API filtering** - Basic filters (brand, date, search)
+2. **Client-side filtering** - Complex filters (product SKU, quantity, demographics)
 
 ```mermaid
 graph TD
     A[User klik Download button] --> B[Call exportSegment hook]
     B --> C[GET /api/segments/id/export]
     C --> D[Load segment dari database]
-    D --> E[Parse filters]
+    D --> E[Parse filters dari JSON]
     E --> F{Ada brand filter?}
     F -->|Ya| G[Gunakan brand dari filter]
     F -->|Tidak| H[Default: Amura]
-    G --> I[Load template Excel brand]
+    G --> I[Build WMS query params]
     H --> I
-    I --> J[Fetch orders dengan filters]
-    J --> K{Ada engagement filter?}
-    K -->|Ya| L[Enrich dengan data Everpro]
-    K -->|Tidak| M[Skip enrichment]
-    L --> N[Generate Excel file]
-    M --> N
-    N --> O[Download file ke browser]
+    I --> J[Fetch ALL orders dari WMS API]
+    J --> K[CLIENT-SIDE FILTERING]
+    K --> L[Filter by Product SKU]
+    L --> M[Filter by Quantity]
+    M --> N[Filter by Demographics]
+    N --> O[Filter by Customer Type]
+    O --> P{Ada engagement filter?}
+    P -->|Ya| Q[Enrich dengan data Everpro]
+    P -->|Tidak| R[Skip enrichment]
+    Q --> S[Filter by Engagement Status]
+    S --> T[Parse product SKU to columns]
+    R --> T
+    T --> U[Load template Excel brand]
+    U --> V[Generate Excel file]
+    V --> W[Download file ke browser]
+```
+
+### Why Client-Side Filtering?
+
+**Problem:** WMS API memiliki keterbatasan filtering:
+- ❌ Tidak bisa filter by product SKU
+- ❌ Tidak bisa filter by quantity
+- ❌ Tidak bisa filter by demographics (city, district)
+- ❌ Tidak mendukung complex AND/OR conditions
+
+**Solution:** Two-stage filtering
+1. WMS API filter: Brand, date range, search keyword (basic)
+2. Client-side filter: Product SKU, quantity, demographics (complex)
+
+**Contoh:**
+```
+Filter: "Customer dari Jakarta yang beli RG-CEH-100 minimal 2 pcs"
+
+WMS Query: ?client_id=1 (Reglow)
+Client Filter: 
+  - order.product contains "RG-CEH-100"
+  - product quantity >= 2
+  - order.city === "JAKARTA"
 ```
 
 ## Template Selection
@@ -109,6 +174,59 @@ Sistem secara otomatis memilih template berdasarkan brand yang ada di filter seg
 | Reglow | `OrdersExportReglow.xlsx` | `SegmentName_Reglow_2026-03-19.xlsx` |
 | Purela | `OrdersExportPurela.xlsx` | `SegmentName_Purela_2026-03-19.xlsx` |
 | Tidak ada / Multiple | `OrdersExportAmura.xlsx` (default) | `SegmentName_Amura_2026-03-19.xlsx` |
+
+## Product SKU Mapping
+
+### How It Works
+
+WMS API mengembalikan **full product SKU codes** (e.g., `RG-CEH-100`, `RG-IW-20`), tetapi template Excel menggunakan **short column names** (e.g., `RGTH`, `RGNC`).
+
+Export menggunakan **explicit mapping table** untuk convert SKU ke column name:
+
+```typescript
+const SKU_TO_COLUMN = {
+  "RG-CEH-100": "RGTH",   // Ceramides Hydrating → Toner Hydrating
+  "RG-IW-20": "RGNC",     // Intensive Whitening → Night Cream
+  "RG-PG-20": "RGSM",     // Perfect Glowing → Serum
+  "RG-PCH": "RGPCH",      // Pouch (direct match)
+  // ... more mappings
+};
+```
+
+### Example Process
+
+**Order product field dari WMS:**
+```
+"1 RG-CEH-100,1 RG-PCH,2 RG-IW-20"
+```
+
+**Parsing steps:**
+1. Split by comma: `["1 RG-CEH-100", "1 RG-PCH", "2 RG-IW-20"]`
+2. Extract SKU + qty:
+   - `RG-CEH-100` → qty: 1
+   - `RG-PCH` → qty: 1
+   - `RG-IW-20` → qty: 2
+3. Map to columns:
+   - `RG-CEH-100` → `RGTH` (qty: 1)
+   - `RG-PCH` → `RGPCH` (qty: 1)
+   - `RG-IW-20` → `RGNC` (qty: 2)
+
+**Result in Excel:**
+- Column `RGTH`: 1
+- Column `RGPCH`: 1
+- Column `RGNC`: 2
+- All other product columns: 0
+
+### Unknown Products
+
+SKU yang tidak ada di mapping table akan masuk ke column **`OTHER`**:
+
+```typescript
+// If SKU not found in mapping
+generateShortCode("RG-UNKNOWN") // Returns "OTHER"
+```
+
+Lihat dokumentasi lengkap di [product-parser.md](./product-parser.md).
 
 ## Kolom-Kolom Excel Export
 
