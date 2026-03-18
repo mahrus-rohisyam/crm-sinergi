@@ -131,3 +131,99 @@ export function useCreateSegment() {
     error,
   };
 }
+
+/**
+ * Hook to update an existing segment
+ */
+export function useUpdateSegment() {
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const updateSegment = async (
+    id: string,
+    data: {
+      name: string;
+      description?: string;
+      filters: unknown;
+      resultCount: number;
+    },
+  ): Promise<Segment | null> => {
+    try {
+      setIsUpdating(true);
+      setError(null);
+
+      const response = await fetch(`/api/segments/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const segment = await response.json();
+      return segment;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      console.error("Failed to update segment:", error);
+      return null;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return {
+    updateSegment,
+    isUpdating,
+    error,
+  };
+}
+
+/**
+ * Hook to fetch a single segment by ID
+ */
+export function useSegment(id: string | null) {
+  const [segment, setSegment] = useState<Segment | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchSegment = useCallback(async () => {
+    if (!id) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch(`/api/segments/${id}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setSegment(data);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      console.error("Failed to fetch segment:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchSegment();
+  }, [fetchSegment]);
+
+  return {
+    segment,
+    isLoading,
+    error,
+    refetch: fetchSegment,
+  };
+}

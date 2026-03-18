@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 
 export type FilterOptions = {
   brands: string[];
+  brandClientIdMap: Record<string, number>;
   skus: string[];
   provinces: string[];
   cities: string[];
@@ -46,10 +47,11 @@ export function useFilterOptions(): UseFilterOptionsReturn {
       const error = err instanceof Error ? err : new Error(String(err));
       setError(error);
       console.error("Failed to fetch filter options:", error);
-      
+
       // Set default empty options on error
       setOptions({
         brands: [],
+        brandClientIdMap: {},
         skus: [],
         provinces: [],
         cities: [],
