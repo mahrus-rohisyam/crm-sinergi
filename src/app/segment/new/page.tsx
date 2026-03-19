@@ -693,9 +693,12 @@ export default function NewSegmentPage() {
   // Extract selected brands from filters to filter options
   const selectedBrands = useMemo(() => {
     const brandFilter = filters.find(f => f.type === "brand");
-    return (brandFilter?.config.brands as string[]) || [];
+    const brands = (brandFilter?.config.brands as string[]) || [];
+    console.log("[NewSegmentPage] Selected brands changed:", brands);
+    return brands;
   }, [filters]);
   
+  console.log("[NewSegmentPage] Calling useFilterOptions with brands:", selectedBrands);
   const { options: filterOptions } = useFilterOptions(selectedBrands);
   const { createSegment, isCreating } = useCreateSegment();
   const { users } = useUsers();

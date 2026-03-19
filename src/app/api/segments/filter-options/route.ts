@@ -48,6 +48,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const brandIdsParam = searchParams.get("brand_ids");
     const selectedBrandNames = brandIdsParam ? brandIdsParam.split(",").filter(b => b.trim()) : [];
+    
+    console.log("[Filter Options API] Request received with brand_ids:", brandIdsParam);
+    console.log("[Filter Options API] Selected brand names:", selectedBrandNames);
 
     // Fetch clients and customer services first (these don't need client_id)
     const [clients, wmsValues] = await Promise.allSettled([
@@ -64,6 +67,8 @@ export async function GET(request: Request) {
       brands = clients.value.map(c => c.name).sort((a, b) => a.localeCompare(b, "id"));
       allClientIds = clients.value.map(c => c.id);
       clients.value.forEach(c => clientMap.set(c.name, c.id));
+      console.log("[Filter Options API] Available brands:", brands);
+      console.log("[Filter Options API] Client map:", Array.from(clientMap.entries()));
     } else {
       console.error("Failed to fetch brands:", clients.reason);
       brands = []; // No fallback, let frontend handle empty state
@@ -74,11 +79,17 @@ export async function GET(request: Request) {
     if (selectedBrandNames.length > 0) {
       // Filter to only selected brands
       targetClientIds = selectedBrandNames
-        .map(brandName => clientMap.get(brandName))
+        .map(brandName => {
+          const clientId = clientMap.get(brandName);
+          console.log(`[Filter Options API] Mapping brand "${brandName}" to client_id:`, clientId);
+          return clientId;
+        })
         .filter((id): id is number => id !== undefined);
+      console.log("[Filter Options API] Target client IDs for selected brands:", targetClientIds);
     } else {
       // No brand filter, fetch all
       targetClientIds = allClientIds;
+      console.log("[Filter Options API] No brand filter, fetching all client IDs:", targetClientIds);
     }
 
     // Fetch products, ads platforms, and customer services for target brands in parallel
