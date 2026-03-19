@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { Modal } from "@/components/ui/Modal";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   useSettings,
@@ -221,6 +221,7 @@ type FilterFormProps = {
   onChange: (c: Record<string, unknown>) => void;
   options: FilterOptions;
   settings: AppSettingsData;
+  filters?: FilterModule[]; // Optional filters array to check for brand existence
 };
 
 function BrandFilterForm({ config, onChange, options }: FilterFormProps) {
@@ -238,9 +239,25 @@ function BrandFilterForm({ config, onChange, options }: FilterFormProps) {
   );
 }
 
-function TransactionFilterForm({ config, onChange, options, settings }: FilterFormProps) {
+function TransactionFilterForm({ config, onChange, options, settings, filters }: FilterFormProps) {
+  // Check if brand filter exists
+  const brandFilter = filters?.find(f => f.type === "brand");
+  const hasBrandFilter = brandFilter && (brandFilter.config.brands as string[])?.length > 0;
+  
   return (
     <div className="grid gap-4 sm:grid-cols-2">
+      {!hasBrandFilter && (
+        <div className="sm:col-span-2 rounded-lg bg-amber-50 border border-amber-200 p-3 mb-2">
+          <div className="flex items-start gap-2">
+            <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <div className="text-sm text-amber-800">
+              <strong>Brand filter diperlukan.</strong> Tambahkan filter Brand terlebih dahulu untuk memfilter produk berdasarkan brand.
+            </div>
+          </div>
+        </div>
+      )}
       <div className="sm:col-span-2">
         <label className="filter-label">SKU (Produk)</label>
         <MultiSelect
@@ -371,26 +388,6 @@ function TimeframeFilterForm({ config, onChange }: FilterFormProps) {
 function DemographicsFilterForm({ config, onChange, options }: FilterFormProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <div>
-        <label className="filter-label">Nama Customer</label>
-        <input
-          type="text"
-          value={(config.customerName as string) || ""}
-          onChange={(e) => onChange({ ...config, customerName: e.target.value || undefined })}
-          placeholder="Cari nama..."
-          className="filter-input"
-        />
-      </div>
-      <div>
-        <label className="filter-label">No HP / WhatsApp</label>
-        <input
-          type="text"
-          value={(config.phoneNumber as string) || ""}
-          onChange={(e) => onChange({ ...config, phoneNumber: e.target.value || undefined })}
-          placeholder="628xx..."
-          className="filter-input"
-        />
-      </div>
       <div className="sm:col-span-2">
         <label className="filter-label">Provinsi</label>
         <MultiSelect
@@ -464,9 +461,25 @@ function EngagementCustomerFilterForm({ config, onChange, options }: FilterFormP
   );
 }
 
-function EngagementManagementFilterForm({ config, onChange, options }: FilterFormProps) {
+function EngagementManagementFilterForm({ config, onChange, options, filters }: FilterFormProps) {
+  // Check if brand filter exists
+  const brandFilter = filters?.find(f => f.type === "brand");
+  const hasBrandFilter = brandFilter && (brandFilter.config.brands as string[])?.length > 0;
+  
   return (
     <div className="grid gap-4 sm:grid-cols-2">
+      {!hasBrandFilter && (
+        <div className="sm:col-span-2 rounded-lg bg-amber-50 border border-amber-200 p-3 mb-2">
+          <div className="flex items-start gap-2">
+            <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <div className="text-sm text-amber-800">
+              <strong>Brand filter diperlukan.</strong> Tambahkan filter Brand terlebih dahulu untuk menampilkan CS dan Sumber Leads berdasarkan brand.
+            </div>
+          </div>
+        </div>
+      )}
       <div className="sm:col-span-2">
         <label className="filter-label">Nama CS</label>
         <MultiSelect
@@ -649,7 +662,17 @@ export default function EditSegmentPage() {
 
   // Using custom hooks for data fetching
   const { settings: appSettings } = useSettings();
-  const { options: filterOptions } = useFilterOptions();
+  
+  // Local filter state (must be before useFilterOptions to get selected brands)
+  const [filters, setFilters] = useState<FilterModule[]>([]);
+  
+  // Extract selected brands from filters to filter options
+  const selectedBrands = useMemo(() => {
+    const brandFilter = filters.find(f => f.type === "brand");
+    return (brandFilter?.config.brands as string[]) || [];
+  }, [filters]);
+  
+  const { options: filterOptions } = useFilterOptions(selectedBrands);
   const { updateSegment, isUpdating } = useUpdateSegment();
   const { preview, isLoading: previewLoading, fetchPreview } = useSegmentPreview();
 
@@ -658,8 +681,6 @@ export default function EditSegmentPage() {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [isLoadingSegment, setIsLoadingSegment] = useState(true);
 
-  // Local filter state
-  const [filters, setFilters] = useState<FilterModule[]>([]);
   const [showFilterPicker, setShowFilterPicker] = useState(false);
   const [showAllUsersModal, setShowAllUsersModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -1032,7 +1053,6 @@ export default function EditSegmentPage() {
                   <span className="flex-[2]">Name</span>
                   <span className="flex-1 text-center">Last Pur.</span>
                   <span className="flex-1 text-center">Last Contact</span>
-                  <span className="w-8 text-right">Status</span>
                 </div>
                 <div className="space-y-4 text-xs font-medium">
                   {preview.customers.slice(0, 7).map((c: CustomerPreview, i: number) => {
@@ -1071,22 +1091,14 @@ export default function EditSegmentPage() {
                             <span className="text-slate-400">Never</span>
                           )}
                         </span>
-                        <span className="w-8 flex justify-end items-center gap-1">
-                          {/* Engagement indicator (left) */}
-                          {preview._meta?.everproEnriched && (
+                        {preview._meta?.everproEnriched && (
+                          <span className="w-8 flex justify-end items-center gap-1">
                             <div
                               className={`h-2 w-2 rounded-full ${engagementColor}`}
                               title={c.engagementStatus === "contacted" ? "Contacted" : "Not Contacted"}
                             />
-                          )}
-                          {/* Order status indicator (right) */}
-                          <div
-                            className={`h-2 w-2 rounded-full ${c.status === "process" ? "bg-blue-500" :
-                                c.status === "pending" ? "bg-amber-500" :
-                                  "bg-slate-300"
-                              }`}
-                          />
-                        </span>
+                          </span>
+                        )}
                       </div>
                     );
                   })}
@@ -1220,6 +1232,7 @@ export default function EditSegmentPage() {
                     onChange={(c) => updateFilterConfig(filter.id, c)}
                     options={options}
                     settings={settings}
+                    filters={filters}
                   />
                 </div>
               </Card>

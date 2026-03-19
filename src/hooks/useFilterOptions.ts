@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 export type FilterOptions = {
   brands: string[];
@@ -23,18 +23,26 @@ type UseFilterOptionsReturn = {
 /**
  * Custom hook to fetch filter options for segment builder
  * Fetches dropdown options from Next.js API route (which proxies to WMS API)
+ * @param brandIds - Optional array of brand names to filter results by
  */
-export function useFilterOptions(): UseFilterOptionsReturn {
+export function useFilterOptions(brandIds?: string[]): UseFilterOptionsReturn {
   const [options, setOptions] = useState<FilterOptions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchOptions = async () => {
+  const brandIdsKey = brandIds?.join(",") || "";
+
+  const fetchOptions = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch("/api/segments/filter-options");
+      const url = new URL("/api/segments/filter-options", window.location.origin);
+      if (brandIds && brandIds.length > 0) {
+        url.searchParams.set("brand_ids", brandIds.join(","));
+      }
+
+      const response = await fetch(url.toString());
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -63,11 +71,11 @@ export function useFilterOptions(): UseFilterOptionsReturn {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [brandIds]);
 
   useEffect(() => {
     fetchOptions();
-  }, []);
+  }, [fetchOptions, brandIdsKey]); // Re-fetch when brandIds change
 
   return {
     options,
