@@ -677,6 +677,7 @@ export default function NewSegmentPage() {
   const { createSegment, isCreating } = useCreateSegment();
   const { users } = useUsers();
   const { preview, isLoading: previewLoading, fetchPreview } = useSegmentPreview();
+  const [isExporting, setIsExporting] = useState(false);
 
   const [segmentName, setSegmentName] = useState("New Segment");
   const [editingTitle, setEditingTitle] = useState(false);
@@ -772,6 +773,65 @@ export default function NewSegmentPage() {
           : f,
       ),
     );
+  };
+
+  // ─── Export Preview CSV (Full Export) ─────────────────────────────────
+
+  const handleExportPreview = async () => {
+    if (filters.length === 0) {
+      alert("No filters applied. Please add filters first.");
+      return;
+    }
+
+    if (!segmentName.trim() || segmentName === "New Segment") {
+      alert("Please enter a segment name before exporting.");
+      return;
+    }
+
+    setIsExporting(true);
+    
+    try {
+      console.log(`Starting full export for segment: ${segmentName}`);
+      
+      // Call API to export ALL matching data (not just preview)
+      const response = await fetch("/api/segments/export-preview", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          filters,
+          segmentName,
+          settings: {
+            currencySymbol: settings.currencySymbol,
+            marketingCostPerCustomer: settings.marketingCostPerCustomer,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Export failed");
+      }
+
+      // Get the CSV content
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${segmentName.replace(/[^a-z0-9]/gi, '_')}_full_export_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      console.log(`Export completed successfully`);
+    } catch (error) {
+      console.error("Export error:", error);
+      alert(`Failed to export CSV: ${error instanceof Error ? error.message : "Unknown error"}`);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // ─── Save ───────────────────────────────────────────────
@@ -976,7 +1036,40 @@ export default function NewSegmentPage() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-3 px-1">
+                <div className="mt-8 space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full text-xs font-bold uppercase tracking-widest text-slate-600 py-3 rounded-xl border-slate-200"
+                    onClick={() => setShowAllUsersModal(true)}
+                  >
+                    View All {matchingCount.toLocaleString("id-ID")} Users
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    className="w-full text-xs font-bold uppercase tracking-widest text-blue-600 py-3 rounded-xl border-blue-200 hover:bg-blue-50"
+                    onClick={handleExportPreview}
+                    disabled={isExporting || filters.length === 0}
+                  >
+                    {isExporting ? (
+                      <>
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent mr-2" />
+                        Exporting All Data...
+                      </>
+                    ) : (
+                      <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-2">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Export All to Excel
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-3 px-1 mt-8">
                   <span className="flex-[2]">Name</span>
                   <span className="flex-1 text-center">Last Pur.</span>
                   <span className="flex-1 text-center">Last Contact</span>
@@ -1355,8 +1448,9 @@ export default function NewSegmentPage() {
                     <line x1="12" y1="8" x2="12.01" y2="8" />
                   </svg>
                   <span>
-                    Showing preview of <strong>{preview.customers.length}</strong> out of <strong>{matchingCount.toLocaleString("id-ID")}</strong> matching users. 
-                    Full list will be available after saving segment.
+                    <strong>Preview Mode:</strong> Showing sample of <strong>{preview.customers.length}</strong> out of <strong>{matchingCount.toLocaleString("id-ID")}</strong> matching customers. 
+                    <br/>
+                    Click <strong>&quot;Export All Excel&quot;</strong> below to download all {matchingCount.toLocaleString("id-ID")} customers.
                   </span>
                 </div>
               </div>
@@ -1465,23 +1559,33 @@ export default function NewSegmentPage() {
               </table>
             </div>
 
-            {/* Export actions (placeholder) */}
+            {/* Export actions */}
             <div className="flex items-center justify-between pt-2">
               <p className="text-xs text-slate-500">
-                Save segment to export full customer list
+                Export all {matchingCount.toLocaleString("id-ID")} matching customers to Excel
               </p>
               <Button
                 variant="outline"
                 size="sm"
-                disabled
+                onClick={handleExportPreview}
+                disabled={isExporting || filters.length === 0}
                 className="text-xs"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1.5">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Export CSV
+                {isExporting ? (
+                  <>
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-600 border-t-transparent mr-1.5" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1.5">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Export All Excel
+                  </>
+                )}
               </Button>
             </div>
           </div>
