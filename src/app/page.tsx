@@ -3,7 +3,6 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { useSegmentExport } from "@/hooks";
@@ -26,17 +25,6 @@ function formatDate(dateStr: string) {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  });
-}
-
-function formatDateTime(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   });
 }
 
@@ -79,24 +67,6 @@ function DeleteIcon() {
   );
 }
 
-function ChevronDownIcon({ open }: { open: boolean }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-    >
-      <polyline points="6,9 12,15 18,9" />
-    </svg>
-  );
-}
-
 function PlusIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
@@ -124,28 +94,6 @@ function Tooltip({ label, children }: { label: string; children: React.ReactNode
       {children}
       <span className="tooltip-label">{label}</span>
     </span>
-  );
-}
-
-// ─── Filter label renderer ─────────────────────────────────
-
-function renderFilterValue(key: string, value: unknown): string {
-  if (value === null || value === undefined) return "—";
-  if (typeof value === "object" && !Array.isArray(value)) {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return value.join(", ");
-  }
-  return String(value);
-}
-
-function FilterBadge({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-      <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</span>
-      <span className="text-sm text-slate-700">{value}</span>
-    </div>
   );
 }
 
@@ -227,10 +175,6 @@ export default function CampaignPage() {
     router.push(`/segment/${segmentId}/edit`);
   };
 
-  const toggleExpand = (id: string) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
-
   return (
     <AppShell
       active="Campaigns"
@@ -280,7 +224,6 @@ export default function CampaignPage() {
           <table className="w-full text-left text-sm" id="segments-table">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                <th className="px-6 py-4 w-8"></th>
                 <th className="px-6 py-4">Segment Name</th>
                 <th className="px-6 py-4">Campaign Cost</th>
                 <th className="px-6 py-4">Created At</th>
@@ -292,7 +235,7 @@ export default function CampaignPage() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center text-slate-400">
+                  <td colSpan={6} className="px-6 py-16 text-center text-slate-400">
                     <div className="flex flex-col items-center gap-3">
                       <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
                       <span>Loading segments...</span>
@@ -301,7 +244,7 @@ export default function CampaignPage() {
                 </tr>
               ) : segments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center">
+                  <td colSpan={6} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center gap-4">
                       <EmptyStateIcon />
                       <div>
@@ -319,24 +262,11 @@ export default function CampaignPage() {
                 </tr>
               ) : (
                 segments.map((segment) => {
-                  const isExpanded = expandedId === segment.id;
                   const campaignCost = segment.resultCount * costPerCustomer;
 
                   return (
                     <Fragment key={segment.id}>
-                      <tr
-                        onClick={() => toggleExpand(segment.id)}
-                        className={`cursor-pointer transition-colors duration-150 ${
-                          isExpanded
-                            ? "bg-blue-50/60"
-                            : "hover:bg-slate-50"
-                        }`}
-                      >
-                        {/* Expand chevron */}
-                        <td className="px-6 py-4 text-slate-400">
-                          <ChevronDownIcon open={isExpanded} />
-                        </td>
-
+                      <tr className="transition-colors duration-150 hover:bg-slate-50">
                         {/* Segment name */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -442,58 +372,6 @@ export default function CampaignPage() {
                           </div>
                         </td>
                       </tr>
-
-                      {/* Expanded detail row */}
-                      {isExpanded && (
-                        <tr className="bg-blue-50/30">
-                          <td colSpan={7} className="px-8 py-5">
-                            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                              <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-sm font-semibold text-slate-700">Segment Detail</h3>
-                                <Badge tone="info">{segment.resultCount.toLocaleString("id-ID")} customers</Badge>
-                              </div>
-
-                              {/* Filters display */}
-                              {segment.filters && Object.keys(segment.filters).length > 0 ? (
-                                <div className="space-y-3">
-                                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Applied Filters</p>
-                                  <div className="flex flex-wrap gap-2">
-                                    {Object.entries(segment.filters).map(([key, value]) => (
-                                      <FilterBadge
-                                        key={key}
-                                        label={key.replace(/_/g, " ")}
-                                        value={renderFilterValue(key, value)}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                              ) : (
-                                <p className="text-sm text-slate-400 italic">No filters configured yet.</p>
-                              )}
-
-                              {/* Meta info */}
-                              <div className="mt-4 flex flex-wrap gap-6 border-t border-slate-100 pt-4 text-xs text-slate-400">
-                                <span>
-                                  <span className="font-semibold text-slate-500">Created:</span>{" "}
-                                  {formatDateTime(segment.createdAt)}
-                                </span>
-                                <span>
-                                  <span className="font-semibold text-slate-500">Updated:</span>{" "}
-                                  {formatDateTime(segment.updatedAt)}
-                                </span>
-                                <span>
-                                  <span className="font-semibold text-slate-500">Est. Cost:</span>{" "}
-                                  {formatCurrency(campaignCost)}
-                                </span>
-                                <span>
-                                  <span className="font-semibold text-slate-500">Cost/Customer:</span>{" "}
-                                  {formatCurrency(costPerCustomer)}
-                                </span>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
                     </Fragment>
                   );
                 })
