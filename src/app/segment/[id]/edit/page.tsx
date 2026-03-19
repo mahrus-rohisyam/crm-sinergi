@@ -7,17 +7,15 @@ import { Badge } from "@/components/ui/Badge";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { Modal } from "@/components/ui/Modal";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useRouter, useParams } from "next/navigation";
 import {
   useSettings,
   useFilterOptions,
   useSegmentPreview,
-  useUsers,
   useEverproStats,
 } from "@/hooks";
 import type { FilterOptions as FilterOptionsType } from "@/hooks/useFilterOptions";
-import { useCreateSegment } from "@/hooks/useSegments";
+import { useUpdateSegment } from "@/hooks/useSegments";
 import type { CustomerPreview } from "@/hooks/useSegmentPreview";
 
 
@@ -37,29 +35,6 @@ type FilterModule = {
   type: FilterType;
   connector: "AND" | "OR";
   config: Record<string, unknown>;
-};
-
-type AudiencePreview = {
-  matchingCount: number;
-  totalCount: number;
-  percentage: number;
-  customers: Array<{
-    customerName: string;
-    phoneNumber: string;
-    lastPurchase: string;
-    status: string;
-    lastContact?: string | null;
-    engagementStatus?: "contacted" | "not_contacted" | "unknown";
-    blastStatus?: string;
-  }>;
-  _meta?: {
-    method: string;
-    accurate: boolean;
-    sampleSize: number;
-    totalPages?: number;
-    estimatedApiCallsForFullSync?: number;
-    everproEnriched?: boolean;
-  };
 };
 
 type AppSettingsData = {
@@ -667,26 +642,25 @@ const FILTER_FORMS: Record<FilterType, React.FC<FilterFormProps>> = {
 
 // ─── Main Page ────────────────────────────────────────────
 
-export default function NewSegmentPage() {
+export default function EditSegmentPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const params = useParams();
+  const segmentId = params?.id as string;
 
   // Using custom hooks for data fetching
   const { settings: appSettings } = useSettings();
   const { options: filterOptions } = useFilterOptions();
-  const { createSegment, isCreating } = useCreateSegment();
-  const { users } = useUsers();
+  const { updateSegment, isUpdating } = useUpdateSegment();
   const { preview, isLoading: previewLoading, fetchPreview } = useSegmentPreview();
 
-  const [segmentName, setSegmentName] = useState("New Segment");
+  const [segmentName, setSegmentName] = useState("");
   const [editingTitle, setEditingTitle] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const [isLoadingSegment, setIsLoadingSegment] = useState(true);
 
   // Local filter state
   const [filters, setFilters] = useState<FilterModule[]>([]);
   const [showFilterPicker, setShowFilterPicker] = useState(false);
-  const [pageLimit, setPageLimit] = useState(50);
-  const [currentPage, setCurrentPage] = useState(1);
   const [showAllUsersModal, setShowAllUsersModal] = useState(false);
 
   // App settings with defaults
@@ -712,6 +686,29 @@ export default function NewSegmentPage() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Load existing segment data
+  useEffect(() => {
+    const loadSegment = async () => {
+      if (!segmentId) return;
+      
+      try {
+        const res = await fetch(`/api/segments/${segmentId}`);
+        if (!res.ok) throw new Error("Failed to load segment");
+        const segment = await res.json();
+        
+        setSegmentName(segment.name || "");
+        setFilters(segment.filters || []);
+        setIsLoadingSegment(false);
+      } catch (error) {
+        console.error("Error loading segment:", error);
+        alert("Failed to load segment");
+        router.push("/");
+      }
+    };
+
+    loadSegment();
+  }, [segmentId, router]);
+
   // Focus input when editing starts
   useEffect(() => {
     if (editingTitle && titleInputRef.current) {
@@ -722,7 +719,7 @@ export default function NewSegmentPage() {
 
   const commitTitle = () => {
     if (!segmentName.trim()) {
-      setSegmentName("New Segment");
+      setSegmentName("Untitled Segment");
     }
     setEditingTitle(false);
   };
@@ -743,8 +740,10 @@ export default function NewSegmentPage() {
   );
 
   useEffect(() => {
-    runPreview(filters);
-  }, [filters, runPreview]);
+    if (!isLoadingSegment && filters.length > 0) {
+      runPreview(filters);
+    }
+  }, [filters, isLoadingSegment, runPreview]);
 
   // ─── Filter actions ─────────────────────────────────────
 
@@ -777,33 +776,21 @@ export default function NewSegmentPage() {
   // ─── Save ───────────────────────────────────────────────
 
   const handleSave = async () => {
-    if (!segmentName.trim() || segmentName === "New Segment") {
+    if (!segmentName.trim()) {
       setEditingTitle(true);
       return;
     }
 
-    // Find current user from users list
-    const me = users?.find(
-      (u: { email: string }) => u.email === session?.user?.email
-    );
-
-    if (!me) {
-      alert("User not found.");
-      return;
-    }
-
-    const result = await createSegment({
+    const result = await updateSegment(segmentId, {
       name: segmentName,
-      description: undefined,
       filters,
       resultCount: preview?.matchingCount || 0,
-      createdById: me.id,
     });
 
     if (result) {
       router.push("/");
     } else {
-      alert("Failed to save segment.");
+      alert("Failed to update segment.");
     }
   };
 
@@ -812,10 +799,15 @@ export default function NewSegmentPage() {
   const matchingCount = preview?.matchingCount || 0;
   const campaignCost = matchingCount * settings.marketingCostPerCustomer;
 
-  // Calculate total pages based on current pageLimit
-  const totalPages = preview?.totalCount
-    ? Math.ceil(preview.totalCount / pageLimit)
-    : 1;
+  if (isLoadingSegment) {
+    return (
+      <AppShell active="Campaigns" header={<div>Loading segment...</div>}>
+        <div className="flex items-center justify-center py-24">
+          <span className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
+        </div>
+      </AppShell>
+    );
+  }
 
   // ─── Render ─────────────────────────────────────────────
 
@@ -826,7 +818,7 @@ export default function NewSegmentPage() {
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div className="group">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-              Campaigns &gt; New Segment
+              Campaigns &gt; Edit Segment
             </p>
             {editingTitle ? (
               <div className="mt-2 flex items-center gap-2">
@@ -866,18 +858,18 @@ export default function NewSegmentPage() {
               </div>
             )}
             <p className="text-sm text-slate-500">
-              Definisikan filter audiens untuk campaign marketing Anda.
+              Edit filter audiens untuk campaign marketing Anda.
             </p>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" onClick={() => router.push("/")}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isCreating}>
-              {isCreating ? (
+            <Button onClick={handleSave} disabled={isUpdating}>
+              {isUpdating ? (
                 <>
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Saving...
+                  Updating...
                 </>
               ) : (
                 <>
@@ -885,7 +877,7 @@ export default function NewSegmentPage() {
                     <path d="M5 5h11l3 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" />
                     <path d="M8 5v6h6V5" />
                   </svg>
-                  Save Segment
+                  Update Segment
                 </>
               )}
             </Button>

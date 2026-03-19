@@ -293,7 +293,9 @@ export function canUseDirectMetadata(
 export function buildWMSQueryFromFilters(
   filters: Array<{ type: string; config: Record<string, unknown> }>,
 ): WMSQueryParams {
-  const params: WMSQueryParams = {};
+  const params: WMSQueryParams = {
+    status: "process", // Hardcoded: only show processed orders for audience summary
+  };
 
   for (const filter of filters) {
     const c = filter.config;
@@ -365,4 +367,400 @@ export async function fetchOrdersEfficiently(
   }
 
   return allOrders;
+}
+
+/**
+ * WMS Client/Brand type
+ */
+export type WMSClient = {
+  id: number;
+  name: string;
+  code: string;
+  warehouse_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
+ * Response type for clients list
+ */
+export type WMSClientsResponse = {
+  status: number;
+  message: string;
+  data: WMSClient[];
+};
+
+/**
+ * Fetch list of clients/brands from WMS API
+ * Uses the /v1/open/clients/list endpoint
+ */
+export async function fetchWMSClients(
+  retries = 3,
+): Promise<WMSClient[]> {
+  const apiKey = process.env.WMS_API_KEY;
+  const baseUrl =
+    process.env.WMS_API_BASE_URL || "https://wms-api.sinergisuperapp.com";
+
+  if (!apiKey) {
+    throw new Error("WMS_API_KEY not configured");
+  }
+
+  const url = `${baseUrl}/v1/open/clients/list`;
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          "x-api-key": apiKey,
+        },
+        signal: AbortSignal.timeout(30000), // 30 seconds
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`WMS API error (${response.status}): ${errorText}`);
+      }
+
+      const json: WMSClientsResponse = await response.json();
+      return json.data || [];
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      if (attempt < retries) {
+        // Wait before retry (exponential backoff)
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)),
+        );
+      }
+    }
+  }
+
+  throw new Error(
+    `WMS API clients fetch failed after ${retries} attempts: ${lastError?.message}`,
+  );
+}
+
+/**
+ * WMS Customer Service type
+ */
+export type WMSCustomerService = {
+  id: number;
+  name: string;
+  client_id: number;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
+ * Response type for customer services list
+ */
+export type WMSCustomerServicesResponse = {
+  status: number;
+  message: string;
+  data: WMSCustomerService[];
+};
+
+/**
+ * Fetch list of customer services from WMS API
+ * Uses the /v1/open/admin/customer-services endpoint
+ */
+export async function fetchWMSCustomerServices(
+  clientId?: number,
+  retries = 3,
+): Promise<WMSCustomerService[]> {
+  const apiKey = process.env.WMS_API_KEY;
+  const baseUrl =
+    process.env.WMS_API_BASE_URL || "https://wms-api.sinergisuperapp.com";
+
+  if (!apiKey) {
+    throw new Error("WMS_API_KEY not configured");
+  }
+
+  const url = new URL(`${baseUrl}/v1/open/admin/customer-services`);
+  if (clientId) {
+    url.searchParams.set("client_id", String(clientId));
+  }
+
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url.toString(), {
+        headers: {
+          "x-api-key": apiKey,
+        },
+        signal: AbortSignal.timeout(30000), // 30 seconds
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`WMS API error (${response.status}): ${errorText}`);
+      }
+
+      const json: WMSCustomerServicesResponse = await response.json();
+      return json.data || [];
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      if (attempt < retries) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)),
+        );
+      }
+    }
+  }
+
+  throw new Error(
+    `WMS API customer services fetch failed after ${retries} attempts: ${lastError?.message}`,
+  );
+}
+
+/**
+ * WMS Ads Platform type
+ */
+export type WMSAdsPlatform = {
+  id: number;
+  name: string;
+  client_id: number;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
+ * Response type for ads platforms list
+ */
+export type WMSAdsPlatformsResponse = {
+  status: number;
+  message: string;
+  data: WMSAdsPlatform[];
+};
+
+/**
+ * Fetch list of ads platforms (lead sources) from WMS API
+ * Uses the /v1/open/social-commerce/ads-platform endpoint
+ */
+export async function fetchWMSAdsPlatforms(
+  clientId?: number,
+  retries = 3,
+): Promise<WMSAdsPlatform[]> {
+  const apiKey = process.env.WMS_API_KEY;
+  const baseUrl =
+    process.env.WMS_API_BASE_URL || "https://wms-api.sinergisuperapp.com";
+
+  if (!apiKey) {
+    throw new Error("WMS_API_KEY not configured");
+  }
+
+  const url = new URL(`${baseUrl}/v1/open/social-commerce/ads/platform`);
+  if (clientId) {
+    url.searchParams.set("client_id", String(clientId));
+  }
+
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url.toString(), {
+        headers: {
+          "x-api-key": apiKey,
+        },
+        signal: AbortSignal.timeout(30000), // 30 seconds
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`WMS API error (${response.status}): ${errorText}`);
+      }
+
+      const json: WMSAdsPlatformsResponse = await response.json();
+      return json.data || [];
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      if (attempt < retries) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)),
+        );
+      }
+    }
+  }
+
+  throw new Error(
+    `WMS API ads platforms fetch failed after ${retries} attempts: ${lastError?.message}`,
+  );
+}
+
+/**
+ * WMS Product type
+ */
+export type WMSProduct = {
+  id: number;
+  name: string;
+  sku: string;
+  client_id: number;
+  category_id: number;
+  price: number;
+  stock: number;
+  status: string;
+  is_bundle: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
+ * Response type for products list with pagination
+ */
+export type WMSProductsResponse = {
+  status: number;
+  message: string;
+  data: WMSProduct[];
+  metadata?: {
+    page: number;
+    length: number;
+    count: number;
+    total_page: number;
+  };
+};
+
+/**
+ * Fetch list of products from WMS API
+ * Uses the /v1/open/products/list endpoint
+ */
+export async function fetchWMSProducts(
+  params: {
+    clientId?: number;
+    bundle?: boolean;
+    status?: string;
+    page?: number;
+    length?: number;
+  } = {},
+  retries = 3,
+): Promise<WMSProduct[]> {
+  const apiKey = process.env.WMS_API_KEY;
+  const baseUrl =
+    process.env.WMS_API_BASE_URL || "https://wms-api.sinergisuperapp.com";
+
+  if (!apiKey) {
+    throw new Error("WMS_API_KEY not configured");
+  }
+
+  const url = new URL(`${baseUrl}/v1/open/products/list`);
+  if (params.clientId) url.searchParams.set("client_id", String(params.clientId));
+  if (params.bundle !== undefined) url.searchParams.set("bundle", String(params.bundle));
+  if (params.status) url.searchParams.set("status", params.status);
+  if (params.page) url.searchParams.set("page", String(params.page));
+  if (params.length) url.searchParams.set("length", String(params.length));
+
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url.toString(), {
+        headers: {
+          "x-api-key": apiKey,
+        },
+        signal: AbortSignal.timeout(30000), // 30 seconds
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`WMS API error (${response.status}): ${errorText}`);
+      }
+
+      const json: WMSProductsResponse = await response.json();
+      return json.data || [];
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      if (attempt < retries) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)),
+        );
+      }
+    }
+  }
+
+  throw new Error(
+    `WMS API products fetch failed after ${retries} attempts: ${lastError?.message}`,
+  );
+}
+
+/**
+ * Product item parsed from product_summary
+ */
+export type ProductItem = {
+  qty: number;
+  sku: string;
+};
+
+/**
+ * Parse product_summary string into array of product items
+ * Format: "1 RG-RJ-20,1 RG-IW-20,1 RG-PG-20"
+ * Returns: [{qty: 1, sku: "RG-RJ-20"}, {qty: 1, sku: "RG-IW-20"}, ...]
+ */
+export function parseProductSummary(productSummary: string): ProductItem[] {
+  if (!productSummary || productSummary.trim() === "") {
+    return [];
+  }
+
+  const items: ProductItem[] = [];
+  const parts = productSummary.split(",");
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+
+    // Match pattern: "number SKU" or just "SKU"
+    const match = trimmed.match(/^(\d+)\s+(.+)$/);
+    
+    if (match) {
+      const [, qtyStr, sku] = match;
+      items.push({
+        qty: parseInt(qtyStr, 10),
+        sku: sku.trim(),
+      });
+    } else {
+      // If no quantity prefix, assume qty = 1
+      items.push({
+        qty: 1,
+        sku: trimmed,
+      });
+    }
+  }
+
+  return items;
+}
+
+/**
+ * Calculate total unique SKU count from product_summary
+ */
+export function getUniqueSkuCount(productSummary: string): number {
+  const items = parseProductSummary(productSummary);
+  const uniqueSkus = new Set(items.map((item) => item.sku));
+  return uniqueSkus.size;
+}
+
+/**
+ * Calculate total quantity from product_summary
+ */
+export function getTotalQuantity(productSummary: string): number {
+  const items = parseProductSummary(productSummary);
+  return items.reduce((sum, item) => sum + item.qty, 0);
+}
+
+/**
+ * Get all unique SKUs from an array of orders
+ */
+export function extractUniqueSKUs(orders: WMSOrder[]): string[] {
+  const skuSet = new Set<string>();
+  
+  for (const order of orders) {
+    if (order.product_summary) {
+      const items = parseProductSummary(order.product_summary);
+      items.forEach((item) => skuSet.add(item.sku));
+    }
+  }
+  
+  return Array.from(skuSet).sort();
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/prisma";
-import * as XLSX from "xlsx";
+import { parseEverproFile } from "@/lib/everpro-parser";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,34 +22,95 @@ export async function POST(req: NextRequest) {
     // Ensure directory exists
     try {
       await mkdir(publicDir, { recursive: true });
-    } catch (e) {}
-
-    // Parse Row Count using XLSX
-    let rowCount = 0;
-    try {
-      const workbook = XLSX.read(arrayBuffer, { type: "array" });
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
-      // Subtract header row if exists
-      rowCount = Math.max(0, jsonData.length - 1);
-    } catch (parseErr) {
-      console.warn("Failed to parse row count during upload:", parseErr);
+    } catch (e) {
+      // Directory might already exist, that's fine
     }
 
+    // Save file to disk
     await writeFile(filePath, buffer);
 
+    // Parse the file to extract contacts
+    const parseResult = parseEverproFile(buffer, file.name);
+
+    if (!parseResult.success) {
+      // File saved but parsing failed
+      const history = await prisma.everproUploadHistory.create({
+        data: {
+          fileName: file.name,
+          filePath: `/everpro-sync/${fileName}`,
+          status: "failed",
+          totalRows: parseResult.totalRows,
+        },
+      });
+
+      return NextResponse.json(
+        {
+          error: "File parsing failed",
+          details: parseResult.errors,
+          history,
+        },
+        { status: 400 },
+      );
+    }
+
+    // Upsert contacts to database (batch operation)
+    // Use transaction for consistency
+    const upsertResults = await prisma.$transaction(async (tx) => {
+      const results = [];
+      
+      // Process in batches of 100 for better performance
+      const batchSize = 100;
+      for (let i = 0; i < parseResult.contacts.length; i += batchSize) {
+        const batch = parseResult.contacts.slice(i, i + batchSize);
+        
+        for (const contact of batch) {
+          const result = await tx.everproContact.upsert({
+            where: { phoneNumber: contact.phoneNumber },
+            update: {
+              customerName: contact.customerName,
+              lastBlastDate: contact.lastBlastDate,
+              blastStatus: "Sudah", // Mark as contacted
+              updatedAt: new Date(),
+            },
+            create: {
+              phoneNumber: contact.phoneNumber,
+              customerName: contact.customerName,
+              lastBlastDate: contact.lastBlastDate,
+              blastStatus: "Sudah", // Mark as contacted
+            },
+          });
+          results.push(result);
+        }
+      }
+      
+      return results;
+    });
+
+    // Create upload history record
     const history = await prisma.everproUploadHistory.create({
       data: {
         fileName: file.name,
         filePath: `/everpro-sync/${fileName}`,
         status: "success",
-        totalRows: rowCount,
+        totalRows: parseResult.totalRows,
       },
     });
 
-    return NextResponse.json(history);
+    return NextResponse.json({
+      success: true,
+      history,
+      contactsProcessed: upsertResults.length,
+      totalRows: parseResult.totalRows,
+      errors: parseResult.errors.length > 0 ? parseResult.errors : undefined,
+    });
   } catch (error) {
     console.error("Upload error:", error);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Upload failed",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
   }
 }
