@@ -665,13 +665,21 @@ export default function EditSegmentPage() {
   
   // Local filter state (must be before useFilterOptions to get selected brands)
   const [filters, setFilters] = useState<FilterModule[]>([]);
+  const [isLoadingSegment, setIsLoadingSegment] = useState(true);
   
   // Extract selected brands from filters to filter options
+  // Only pass brands to useFilterOptions after segment is loaded
   const selectedBrands = useMemo(() => {
+    // Don't fetch filtered options until segment is loaded
+    if (isLoadingSegment) return undefined;
+    
     const brandFilter = filters.find(f => f.type === "brand");
-    return (brandFilter?.config.brands as string[]) || [];
-  }, [filters]);
+    const brands = (brandFilter?.config.brands as string[]) || [];
+    console.log("[EditSegmentPage] Selected brands changed:", brands);
+    return brands.length > 0 ? brands : undefined;
+  }, [filters, isLoadingSegment]);
   
+  console.log("[EditSegmentPage] Calling useFilterOptions with brands:", selectedBrands);
   const { options: filterOptions } = useFilterOptions(selectedBrands);
   const { updateSegment, isUpdating } = useUpdateSegment();
   const { preview, isLoading: previewLoading, fetchPreview } = useSegmentPreview();
@@ -679,7 +687,6 @@ export default function EditSegmentPage() {
   const [segmentName, setSegmentName] = useState("");
   const [editingTitle, setEditingTitle] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const [isLoadingSegment, setIsLoadingSegment] = useState(true);
 
   const [showFilterPicker, setShowFilterPicker] = useState(false);
   const [showAllUsersModal, setShowAllUsersModal] = useState(false);
