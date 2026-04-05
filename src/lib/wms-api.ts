@@ -90,7 +90,7 @@ export async function fetchWMSOrders(
   if (params.status) url.searchParams.set("status", params.status);
   if (params.search) url.searchParams.set("search", params.search);
   if (params.client_id) url.searchParams.set("client_id", String(params.client_id));
-
+  console.log(url, 'url')
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -112,7 +112,7 @@ export async function fetchWMSOrders(
       return json;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (attempt < retries) {
         // Wait before retry (exponential backoff)
         await new Promise((resolve) =>
@@ -230,7 +230,7 @@ export function getBrandClientId(brandName: string): number | null {
     "Amura": 2,    // primary brand
     "Purela": 3,   // 89 orders
   };
-  
+
   return brandMap[brandName] || null;
 }
 
@@ -293,9 +293,24 @@ export function canUseDirectMetadata(
 export function buildWMSQueryFromFilters(
   filters: Array<{ type: string; config: Record<string, unknown> }>,
 ): WMSQueryParams {
-  const params: WMSQueryParams = {
-    status: "process", // Hardcoded: only show processed orders for audience summary
-  };
+  // Check if transaction filter has an orderStatus selected
+  const transactionFilter = filters.find((f) => f.type === "transaction");
+  const orderStatus = transactionFilter?.config.orderStatus as string | undefined;
+
+  const params: WMSQueryParams = {};
+
+  // Apply status filter:
+  // - If transaction filter exists and orderStatus is set, use it
+  // - If transaction filter exists but orderStatus is empty (Semua), don't filter by status
+  // - If no transaction filter at all, default to "process" (backward compat)
+  if (transactionFilter) {
+    if (orderStatus) {
+      params.status = orderStatus;
+    }
+    // else: user selected "Semua" — no status filter
+  } else {
+    params.status = "process"; // Default: only show processed orders
+  }
 
   for (const filter of filters) {
     const c = filter.config;
@@ -426,7 +441,7 @@ export async function fetchWMSClients(
       return json.data || [];
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (attempt < retries) {
         // Wait before retry (exponential backoff)
         await new Promise((resolve) =>
@@ -502,7 +517,7 @@ export async function fetchWMSCustomerServices(
       return json.data || [];
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (attempt < retries) {
         await new Promise((resolve) =>
           setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)),
@@ -577,7 +592,7 @@ export async function fetchWMSAdsPlatforms(
       return json.data || [];
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (attempt < retries) {
         await new Promise((resolve) =>
           setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)),
@@ -672,7 +687,7 @@ export async function fetchWMSProducts(
       return json.data || [];
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (attempt < retries) {
         await new Promise((resolve) =>
           setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)),
@@ -713,7 +728,7 @@ export function parseProductSummary(productSummary: string): ProductItem[] {
 
     // Match pattern: "number SKU" or just "SKU"
     const match = trimmed.match(/^(\d+)\s+(.+)$/);
-    
+
     if (match) {
       const [, qtyStr, sku] = match;
       items.push({
@@ -754,13 +769,13 @@ export function getTotalQuantity(productSummary: string): number {
  */
 export function extractUniqueSKUs(orders: WMSOrder[]): string[] {
   const skuSet = new Set<string>();
-  
+
   for (const order of orders) {
     if (order.product_summary) {
       const items = parseProductSummary(order.product_summary);
       items.forEach((item) => skuSet.add(item.sku));
     }
   }
-  
+
   return Array.from(skuSet).sort();
 }

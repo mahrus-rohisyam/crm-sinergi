@@ -354,6 +354,21 @@ function TransactionFilterForm({ config, onChange, options, settings, filters }:
         </select>
       </div>
       <div>
+        <label className="filter-label">Status Order</label>
+        <select
+          value={(config.orderStatus as string) || ""}
+          onChange={(e) => onChange({ ...config, orderStatus: e.target.value || undefined })}
+          className="filter-input"
+        >
+          <option value="">Semua</option>
+          <option value="process">Process</option>
+          <option value="sent">Sent</option>
+        </select>
+        <p className="text-xs text-slate-500 mt-1">
+          Filter berdasarkan status pengiriman order
+        </p>
+      </div>
+      <div>
         <label className="filter-label">Ekspedisi</label>
         <MultiSelect
           options={options.expeditions}
