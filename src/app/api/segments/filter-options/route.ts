@@ -38,33 +38,68 @@ const TRANSACTION_TYPES = ["COD", "Transfer"];
  * - CS Names: /v1/open/admin/customer-services
  * - Lead Sources: /v1/open/social-commerce/ads-platform
  * - Other fields: sampled from orders data
+ * 
+ * Query Parameters:
+ * - brand_ids: comma-separated list of brand names to filter results
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const brandIdsParam = searchParams.get("brand_ids");
+    const selectedBrandNames = brandIdsParam ? brandIdsParam.split(",").filter(b => b.trim()) : [];
+    
+    console.log("[Filter Options API] Request received with brand_ids:", brandIdsParam);
+    console.log("[Filter Options API] Selected brand names:", selectedBrandNames);
+
     // Fetch clients and customer services first (these don't need client_id)
-    const [clients, customerServices, wmsValues] = await Promise.allSettled([
+    const [clients, wmsValues] = await Promise.allSettled([
       fetchWMSClients(),
-      fetchWMSCustomerServices(), // Fetch all CS across all brands
       getDistinctFilterValues(10), // Sample from orders for other fields
     ]);
 
     // Extract brands from clients
     let brands: string[] = [];
-    let clientIds: number[] = [];
+    let allClientIds: number[] = [];
+    const clientMap: Map<string, number> = new Map(); // brand name -> client_id
+    
     if (clients.status === "fulfilled") {
       brands = clients.value.map(c => c.name).sort((a, b) => a.localeCompare(b, "id"));
-      clientIds = clients.value.map(c => c.id);
+      allClientIds = clients.value.map(c => c.id);
+      clients.value.forEach(c => clientMap.set(c.name, c.id));
+      console.log("[Filter Options API] Available brands:", brands);
+      console.log("[Filter Options API] Client map:", Array.from(clientMap.entries()));
     } else {
       console.error("Failed to fetch brands:", clients.reason);
       brands = []; // No fallback, let frontend handle empty state
     }
 
-    // Fetch products and ads platforms for all brands in parallel (both need client_id)
+    // Determine which client IDs to fetch data for
+    let targetClientIds: number[] = [];
+    if (selectedBrandNames.length > 0) {
+      // Filter to only selected brands
+      targetClientIds = selectedBrandNames
+        .map(brandName => {
+          const clientId = clientMap.get(brandName);
+          console.log(`[Filter Options API] Mapping brand "${brandName}" to client_id:`, clientId);
+          return clientId;
+        })
+        .filter((id): id is number => id !== undefined);
+      console.log("[Filter Options API] Target client IDs for selected brands:", targetClientIds);
+    } else {
+      // No brand filter, fetch all
+      targetClientIds = allClientIds;
+      console.log("[Filter Options API] No brand filter, fetching all client IDs:", targetClientIds);
+    }
+
+    // Fetch products, ads platforms, and customer services for target brands in parallel
     let skus: string[] = [];
     let leadSources: string[] = [];
-    if (clientIds.length > 0) {
+    let csNames: string[] = [];
+    
+    if (targetClientIds.length > 0) {
       try {
-        const productPromises = clientIds.map(async (clientId) => {
+        const productPromises = targetClientIds.map(async (clientId) => {
           try {
             return await fetchWMSProducts({
               clientId,
@@ -77,7 +112,7 @@ export async function GET() {
           }
         });
         
-        const adsPlatformPromises = clientIds.map(async (clientId) => {
+        const adsPlatformPromises = targetClientIds.map(async (clientId) => {
           try {
             return await fetchWMSAdsPlatforms(clientId);
           } catch (err) {
@@ -86,12 +121,24 @@ export async function GET() {
           }
         });
         
-        const [allProductsResults, allAdsPlatformsResults] = await Promise.all([
+        const csPromises = targetClientIds.map(async (clientId) => {
+          try {
+            return await fetchWMSCustomerServices(clientId);
+          } catch (err) {
+            console.error(`Failed to fetch customer services for client ${clientId}:`, err);
+            return [];
+          }
+        });
+        
+        const [allProductsResults, allAdsPlatformsResults, allCSResults] = await Promise.all([
           Promise.all(productPromises),
           Promise.all(adsPlatformPromises),
+          Promise.all(csPromises),
         ]);
+        
         const allProducts = allProductsResults.flat();
         const allAdsPlatforms = allAdsPlatformsResults.flat();
+        const allCS = allCSResults.flat();
         
         // Extract unique SKUs and sort
         skus = Array.from(new Set(allProducts.map(p => p.sku)))
@@ -102,23 +149,17 @@ export async function GET() {
         leadSources = Array.from(new Set(allAdsPlatforms.map(ap => ap.name)))
           .filter(name => name && name.trim() !== "")
           .sort((a, b) => a.localeCompare(b, "id"));
+        
+        // Extract unique CS names and sort
+        csNames = Array.from(new Set(allCS.map(cs => cs.name)))
+          .filter(name => name && name.trim() !== "")
+          .sort((a, b) => a.localeCompare(b, "id"));
       } catch (error) {
-        console.error("Failed to fetch products or ads platforms:", error);
+        console.error("Failed to fetch brand-specific data:", error);
         skus = [];
         leadSources = [];
+        csNames = [];
       }
-    }
-
-    // Extract CS names from customer services
-    let csNames: string[] = [];
-    if (customerServices.status === "fulfilled") {
-      csNames = customerServices.value
-        .map(cs => cs.name)
-        .filter((name, index, arr) => arr.indexOf(name) === index) // Deduplicate
-        .sort((a, b) => a.localeCompare(b, "id"));
-    } else {
-      console.error("Failed to fetch customer services:", customerServices.reason);
-      csNames = [];
     }
 
     // Get values from WMS orders sampling
