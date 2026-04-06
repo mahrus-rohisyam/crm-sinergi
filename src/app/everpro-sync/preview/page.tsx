@@ -10,7 +10,7 @@ import Spreadsheet from "react-spreadsheet";
 
 type PreviewCell = {
   value: string;
-  readOnly: true;
+  readOnly: boolean;
 };
 
 function PreviewContent() {
