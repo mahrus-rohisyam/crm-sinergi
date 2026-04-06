@@ -59,7 +59,21 @@ export function useSegmentPreview(): UseSegmentPreviewReturn {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let message = `HTTP error! status: ${response.status}`;
+        try {
+          const errorPayload = (await response.json()) as {
+            error?: string;
+            details?: string;
+          };
+          if (errorPayload?.details) {
+            message = errorPayload.details;
+          } else if (errorPayload?.error) {
+            message = errorPayload.error;
+          }
+        } catch {
+          // Keep fallback message if response is not JSON.
+        }
+        throw new Error(message);
       }
 
       const data = await response.json();

@@ -20,7 +20,6 @@ import type { FilterOptions as FilterOptionsType } from "@/hooks/useFilterOption
 import { useCreateSegment } from "@/hooks/useSegments";
 import type { CustomerPreview } from "@/hooks/useSegmentPreview";
 
-
 // ─── Types ────────────────────────────────────────────────
 
 type FilterType =
@@ -95,7 +94,7 @@ const FILTER_DEFS: Record<
   },
   transaction: {
     label: "Historical Transaction",
-    description: "SKU, qty, jumlah, tipe transaksi, ekspedisi",
+    description: "SKU, qty, jumlah, tipe transaksi",
     iconBg: "bg-emerald-50",
     iconColor: "text-emerald-600",
   },
@@ -107,7 +106,7 @@ const FILTER_DEFS: Record<
   },
   demographics: {
     label: "Demographics",
-    description: "Nama, No HP, provinsi, kota, kecamatan",
+    description: "Provinsi, kota, kecamatan",
     iconBg: "bg-purple-50",
     iconColor: "text-purple-600",
   },
@@ -135,7 +134,16 @@ const FILTER_DEFS: Record<
 
 function BrandIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
       <line x1="7" y1="7" x2="7.01" y2="7" />
     </svg>
@@ -143,7 +151,16 @@ function BrandIcon() {
 }
 function TransactionIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <rect x="2" y="3" width="20" height="18" rx="2" />
       <path d="M8 7h8M8 11h8M8 15h4" />
     </svg>
@@ -151,7 +168,16 @@ function TransactionIcon() {
 }
 function TimeframeIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <rect x="3" y="4" width="18" height="18" rx="2" />
       <line x1="16" y1="2" x2="16" y2="6" />
       <line x1="8" y1="2" x2="8" y2="6" />
@@ -161,7 +187,16 @@ function TimeframeIcon() {
 }
 function DemographicsIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z" />
       <circle cx="12" cy="10" r="2.5" />
     </svg>
@@ -169,7 +204,16 @@ function DemographicsIcon() {
 }
 function EngagementCustomerIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
     </svg>
@@ -177,7 +221,16 @@ function EngagementCustomerIcon() {
 }
 function EngagementManagementIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
       <circle cx="9" cy="7" r="4" />
       <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
@@ -186,7 +239,15 @@ function EngagementManagementIcon() {
 }
 function CloseIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
@@ -194,7 +255,15 @@ function CloseIcon() {
 }
 function PlusCircleIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
       <circle cx="12" cy="12" r="10" />
       <line x1="12" y1="8" x2="12" y2="16" />
       <line x1="8" y1="12" x2="16" y2="12" />
@@ -203,7 +272,15 @@ function PlusCircleIcon() {
 }
 function InfoIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
       <circle cx="12" cy="12" r="10" />
       <line x1="12" y1="16" x2="12" y2="12" />
       <line x1="12" y1="8" x2="12.01" y2="8" />
@@ -212,7 +289,16 @@ function InfoIcon() {
 }
 function LightningIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
     </svg>
   );
@@ -237,6 +323,12 @@ function genId() {
 
 function fmtCurrency(amount: number, symbol: string) {
   return `${symbol} ${amount.toLocaleString("id-ID")}`;
+}
+
+const ALLOWED_BRANDS = new Set(["Amura", "Reglow"]);
+
+function sortAZ(values: string[]) {
+  return [...values].sort((a, b) => a.localeCompare(b, "id"));
 }
 
 // ─── Filter Config Forms ──────────────────────────────────
@@ -264,21 +356,37 @@ function BrandFilterForm({ config, onChange, options }: FilterFormProps) {
   );
 }
 
-function TransactionFilterForm({ config, onChange, options, settings, filters }: FilterFormProps) {
+function TransactionFilterForm({
+  config,
+  onChange,
+  options,
+  settings,
+  filters,
+}: FilterFormProps) {
   // Check if brand filter exists
-  const brandFilter = filters?.find(f => f.type === "brand");
-  const hasBrandFilter = brandFilter && (brandFilter.config.brands as string[])?.length > 0;
-  
+  const brandFilter = filters?.find((f) => f.type === "brand");
+  const hasBrandFilter =
+    brandFilter && (brandFilter.config.brands as string[])?.length > 0;
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {!hasBrandFilter && (
         <div className="sm:col-span-2 rounded-lg bg-amber-50 border border-amber-200 p-3 mb-2">
           <div className="flex items-start gap-2">
-            <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            <svg
+              className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
             </svg>
             <div className="text-sm text-amber-800">
-              <strong>Brand filter diperlukan.</strong> Tambahkan filter Brand terlebih dahulu untuk memfilter produk berdasarkan brand.
+              <strong>Brand filter diperlukan.</strong> Tambahkan filter Brand
+              terlebih dahulu untuk memfilter produk berdasarkan brand.
             </div>
           </div>
         </div>
@@ -288,7 +396,9 @@ function TransactionFilterForm({ config, onChange, options, settings, filters }:
         <MultiSelect
           options={options.skus}
           selected={(config.skus as string[]) || []}
-          onChange={(v) => onChange({ ...config, skus: v.length > 0 ? v : undefined })}
+          onChange={(v) =>
+            onChange({ ...config, skus: v.length > 0 ? v : undefined })
+          }
           placeholder="Pilih SKU produk..."
           allowCustom
         />
@@ -302,7 +412,9 @@ function TransactionFilterForm({ config, onChange, options, settings, filters }:
           type="number"
           min={0}
           value={(config.minQty as string) || ""}
-          onChange={(e) => onChange({ ...config, minQty: e.target.value || undefined })}
+          onChange={(e) =>
+            onChange({ ...config, minQty: e.target.value || undefined })
+          }
           placeholder="0"
           className="filter-input"
         />
@@ -313,29 +425,39 @@ function TransactionFilterForm({ config, onChange, options, settings, filters }:
           type="number"
           min={0}
           value={(config.maxQty as string) || ""}
-          onChange={(e) => onChange({ ...config, maxQty: e.target.value || undefined })}
+          onChange={(e) =>
+            onChange({ ...config, maxQty: e.target.value || undefined })
+          }
           placeholder="∞"
           className="filter-input"
         />
       </div>
       <div>
-        <label className="filter-label">Min Amount ({settings.currencySymbol})</label>
+        <label className="filter-label">
+          Min Amount ({settings.currencySymbol})
+        </label>
         <input
           type="number"
           min={0}
           value={(config.minAmount as string) || ""}
-          onChange={(e) => onChange({ ...config, minAmount: e.target.value || undefined })}
+          onChange={(e) =>
+            onChange({ ...config, minAmount: e.target.value || undefined })
+          }
           placeholder={`${settings.currencySymbol} 0`}
           className="filter-input"
         />
       </div>
       <div>
-        <label className="filter-label">Max Amount ({settings.currencySymbol})</label>
+        <label className="filter-label">
+          Max Amount ({settings.currencySymbol})
+        </label>
         <input
           type="number"
           min={0}
           value={(config.maxAmount as string) || ""}
-          onChange={(e) => onChange({ ...config, maxAmount: e.target.value || undefined })}
+          onChange={(e) =>
+            onChange({ ...config, maxAmount: e.target.value || undefined })
+          }
           placeholder="∞"
           className="filter-input"
         />
@@ -344,12 +466,19 @@ function TransactionFilterForm({ config, onChange, options, settings, filters }:
         <label className="filter-label">Jenis Transaksi</label>
         <select
           value={(config.transactionType as string) || ""}
-          onChange={(e) => onChange({ ...config, transactionType: e.target.value || undefined })}
+          onChange={(e) =>
+            onChange({
+              ...config,
+              transactionType: e.target.value || undefined,
+            })
+          }
           className="filter-input"
         >
           <option value="">Semua</option>
           {options.transactionTypes.map((t) => (
-            <option key={t} value={t}>{t}</option>
+            <option key={t} value={t}>
+              {t}
+            </option>
           ))}
         </select>
       </div>
@@ -357,7 +486,9 @@ function TransactionFilterForm({ config, onChange, options, settings, filters }:
         <label className="filter-label">Status Order</label>
         <select
           value={(config.orderStatus as string) || ""}
-          onChange={(e) => onChange({ ...config, orderStatus: e.target.value || undefined })}
+          onChange={(e) =>
+            onChange({ ...config, orderStatus: e.target.value || undefined })
+          }
           className="filter-input"
         >
           <option value="">Semua</option>
@@ -367,16 +498,6 @@ function TransactionFilterForm({ config, onChange, options, settings, filters }:
         <p className="text-xs text-slate-500 mt-1">
           Filter berdasarkan status pengiriman order
         </p>
-      </div>
-      <div>
-        <label className="filter-label">Ekspedisi</label>
-        <MultiSelect
-          options={options.expeditions}
-          selected={(config.expeditions as string[]) || []}
-          onChange={(v) => onChange({ ...config, expeditions: v.length > 0 ? v : undefined })}
-          placeholder="Pilih ekspedisi..."
-          allowCustom
-        />
       </div>
     </div>
   );
@@ -390,7 +511,9 @@ function TimeframeFilterForm({ config, onChange }: FilterFormProps) {
         <input
           type="date"
           value={(config.inputDateStart as string) || ""}
-          onChange={(e) => onChange({ ...config, inputDateStart: e.target.value || undefined })}
+          onChange={(e) =>
+            onChange({ ...config, inputDateStart: e.target.value || undefined })
+          }
           className="filter-input"
         />
       </div>
@@ -399,7 +522,9 @@ function TimeframeFilterForm({ config, onChange }: FilterFormProps) {
         <input
           type="date"
           value={(config.inputDateEnd as string) || ""}
-          onChange={(e) => onChange({ ...config, inputDateEnd: e.target.value || undefined })}
+          onChange={(e) =>
+            onChange({ ...config, inputDateEnd: e.target.value || undefined })
+          }
           className="filter-input"
         />
       </div>
@@ -408,7 +533,12 @@ function TimeframeFilterForm({ config, onChange }: FilterFormProps) {
         <input
           type="date"
           value={(config.shippingDateStart as string) || ""}
-          onChange={(e) => onChange({ ...config, shippingDateStart: e.target.value || undefined })}
+          onChange={(e) =>
+            onChange({
+              ...config,
+              shippingDateStart: e.target.value || undefined,
+            })
+          }
           className="filter-input"
         />
       </div>
@@ -417,7 +547,12 @@ function TimeframeFilterForm({ config, onChange }: FilterFormProps) {
         <input
           type="date"
           value={(config.shippingDateEnd as string) || ""}
-          onChange={(e) => onChange({ ...config, shippingDateEnd: e.target.value || undefined })}
+          onChange={(e) =>
+            onChange({
+              ...config,
+              shippingDateEnd: e.target.value || undefined,
+            })
+          }
           className="filter-input"
         />
       </div>
@@ -425,7 +560,11 @@ function TimeframeFilterForm({ config, onChange }: FilterFormProps) {
   );
 }
 
-function DemographicsFilterForm({ config, onChange, options }: FilterFormProps) {
+function DemographicsFilterForm({
+  config,
+  onChange,
+  options,
+}: FilterFormProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="sm:col-span-2">
@@ -433,7 +572,9 @@ function DemographicsFilterForm({ config, onChange, options }: FilterFormProps) 
         <MultiSelect
           options={options.provinces}
           selected={(config.provinces as string[]) || []}
-          onChange={(v) => onChange({ ...config, provinces: v.length > 0 ? v : undefined })}
+          onChange={(v) =>
+            onChange({ ...config, provinces: v.length > 0 ? v : undefined })
+          }
           placeholder="Pilih provinsi..."
         />
       </div>
@@ -442,7 +583,9 @@ function DemographicsFilterForm({ config, onChange, options }: FilterFormProps) 
         <MultiSelect
           options={options.cities}
           selected={(config.cities as string[]) || []}
-          onChange={(v) => onChange({ ...config, cities: v.length > 0 ? v : undefined })}
+          onChange={(v) =>
+            onChange({ ...config, cities: v.length > 0 ? v : undefined })
+          }
           placeholder="Pilih kota..."
           allowCustom
         />
@@ -452,7 +595,9 @@ function DemographicsFilterForm({ config, onChange, options }: FilterFormProps) 
         <MultiSelect
           options={options.districts}
           selected={(config.districts as string[]) || []}
-          onChange={(v) => onChange({ ...config, districts: v.length > 0 ? v : undefined })}
+          onChange={(v) =>
+            onChange({ ...config, districts: v.length > 0 ? v : undefined })
+          }
           placeholder="Pilih kecamatan..."
           allowCustom
         />
@@ -461,7 +606,11 @@ function DemographicsFilterForm({ config, onChange, options }: FilterFormProps) 
   );
 }
 
-function EngagementCustomerFilterForm({ config, onChange, options }: FilterFormProps) {
+function EngagementCustomerFilterForm({
+  config,
+  onChange,
+  options,
+}: FilterFormProps) {
   return (
     <div className="space-y-4">
       <div>
@@ -469,7 +618,9 @@ function EngagementCustomerFilterForm({ config, onChange, options }: FilterFormP
         <MultiSelect
           options={options.customerTypes}
           selected={(config.customerTypes as string[]) || []}
-          onChange={(v) => onChange({ ...config, customerTypes: v.length > 0 ? v : undefined })}
+          onChange={(v) =>
+            onChange({ ...config, customerTypes: v.length > 0 ? v : undefined })
+          }
           placeholder="Pilih jenis customer..."
         />
       </div>
@@ -480,7 +631,12 @@ function EngagementCustomerFilterForm({ config, onChange, options }: FilterFormP
             type="number"
             min={0}
             value={(config.minOrderFrequency as string) || ""}
-            onChange={(e) => onChange({ ...config, minOrderFrequency: e.target.value || undefined })}
+            onChange={(e) =>
+              onChange({
+                ...config,
+                minOrderFrequency: e.target.value || undefined,
+              })
+            }
             placeholder="0"
             className="filter-input"
           />
@@ -491,7 +647,12 @@ function EngagementCustomerFilterForm({ config, onChange, options }: FilterFormP
             type="number"
             min={0}
             value={(config.maxOrderFrequency as string) || ""}
-            onChange={(e) => onChange({ ...config, maxOrderFrequency: e.target.value || undefined })}
+            onChange={(e) =>
+              onChange({
+                ...config,
+                maxOrderFrequency: e.target.value || undefined,
+              })
+            }
             placeholder="∞"
             className="filter-input"
           />
@@ -501,21 +662,37 @@ function EngagementCustomerFilterForm({ config, onChange, options }: FilterFormP
   );
 }
 
-function EngagementManagementFilterForm({ config, onChange, options, filters }: FilterFormProps) {
+function EngagementManagementFilterForm({
+  config,
+  onChange,
+  options,
+  filters,
+}: FilterFormProps) {
   // Check if brand filter exists
-  const brandFilter = filters?.find(f => f.type === "brand");
-  const hasBrandFilter = brandFilter && (brandFilter.config.brands as string[])?.length > 0;
-  
+  const brandFilter = filters?.find((f) => f.type === "brand");
+  const hasBrandFilter =
+    brandFilter && (brandFilter.config.brands as string[])?.length > 0;
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {!hasBrandFilter && (
         <div className="sm:col-span-2 rounded-lg bg-amber-50 border border-amber-200 p-3 mb-2">
           <div className="flex items-start gap-2">
-            <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            <svg
+              className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
             </svg>
             <div className="text-sm text-amber-800">
-              <strong>Brand filter diperlukan.</strong> Tambahkan filter Brand terlebih dahulu untuk menampilkan CS dan Sumber Leads berdasarkan brand.
+              <strong>Brand filter diperlukan.</strong> Tambahkan filter Brand
+              terlebih dahulu untuk menampilkan CS dan Sumber Leads berdasarkan
+              brand.
             </div>
           </div>
         </div>
@@ -525,7 +702,9 @@ function EngagementManagementFilterForm({ config, onChange, options, filters }: 
         <MultiSelect
           options={options.csNames}
           selected={(config.csNames as string[]) || []}
-          onChange={(v) => onChange({ ...config, csNames: v.length > 0 ? v : undefined })}
+          onChange={(v) =>
+            onChange({ ...config, csNames: v.length > 0 ? v : undefined })
+          }
           placeholder="Pilih nama CS..."
           allowCustom
         />
@@ -535,7 +714,9 @@ function EngagementManagementFilterForm({ config, onChange, options, filters }: 
         <MultiSelect
           options={options.leadSources}
           selected={(config.leadSources as string[]) || []}
-          onChange={(v) => onChange({ ...config, leadSources: v.length > 0 ? v : undefined })}
+          onChange={(v) =>
+            onChange({ ...config, leadSources: v.length > 0 ? v : undefined })
+          }
           placeholder="Pilih sumber leads..."
           allowCustom
         />
@@ -566,30 +747,45 @@ function EngagementStatusFilterForm({ config, onChange }: FilterFormProps) {
           <div className="flex-1">
             <p className="text-sm font-medium text-slate-700">Everpro Active</p>
             <p className="text-xs text-slate-400 mt-0.5">
-              {loading ? "Loading..." : `Last sync: ${syncStats?.lastSyncDisplay || "Never"}`}
+              {loading
+                ? "Loading..."
+                : `Last sync: ${syncStats?.lastSyncDisplay || "Never"}`}
             </p>
             {!loading && syncStats && syncStats.hasData && (
               <p className="text-xs text-slate-500 mt-1">
-                {syncStats.totalContacts.toLocaleString()} contacts ({syncStats.notContactedCount.toLocaleString()} not contacted)
+                {syncStats.totalContacts.toLocaleString()} contacts (
+                {syncStats.notContactedCount.toLocaleString()} not contacted)
               </p>
             )}
           </div>
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-            !loading && syncStats?.hasData
-              ? "bg-green-50 text-green-700"
-              : "bg-gray-50 text-gray-500"
-          }`}>
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+              !loading && syncStats?.hasData
+                ? "bg-green-50 text-green-700"
+                : "bg-gray-50 text-gray-500"
+            }`}
+          >
             {loading ? "..." : syncStats?.hasData ? "Connected" : "No Data"}
           </span>
         </div>
         {!loading && syncStats && !syncStats.hasData && (
           <div className="mt-2 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
               <line x1="12" y1="9" x2="12" y2="13" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
-            <span>No Everpro data uploaded yet. Upload data from Everpro Sync page.</span>
+            <span>
+              No Everpro data uploaded yet. Upload data from Everpro Sync page.
+            </span>
           </div>
         )}
 
@@ -603,7 +799,9 @@ function EngagementStatusFilterForm({ config, onChange }: FilterFormProps) {
               </p>
             </div>
             <div className="rounded-lg bg-amber-50 px-3 py-2">
-              <p className="text-xs font-medium text-amber-600">Not Contacted</p>
+              <p className="text-xs font-medium text-amber-600">
+                Not Contacted
+              </p>
               <p className="text-lg font-bold text-amber-700 mt-0.5">
                 {syncStats.notContactedCount.toLocaleString()}
               </p>
@@ -617,13 +815,19 @@ function EngagementStatusFilterForm({ config, onChange }: FilterFormProps) {
           <input
             type="checkbox"
             checked={(config.showOnlyNotContacted as boolean) || false}
-            onChange={(e) => onChange({ ...config, showOnlyNotContacted: e.target.checked || undefined })}
+            onChange={(e) =>
+              onChange({
+                ...config,
+                showOnlyNotContacted: e.target.checked || undefined,
+              })
+            }
             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
           />
           <span>Show Only Not Contacted Customers</span>
         </label>
         <p className="text-xs text-slate-500 mt-1 ml-6">
-          Filter to show only customers who haven&apos;t been contacted via Everpro
+          Filter to show only customers who haven&apos;t been contacted via
+          Everpro
         </p>
       </div>
 
@@ -634,29 +838,51 @@ function EngagementStatusFilterForm({ config, onChange }: FilterFormProps) {
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-xs font-medium text-slate-600 mb-1.5 block">From Date</label>
+            <label className="text-xs font-medium text-slate-600 mb-1.5 block">
+              From Date
+            </label>
             <input
               type="date"
               value={(config.lastContactDateStart as string) || ""}
-              onChange={(e) => onChange({ ...config, lastContactDateStart: e.target.value || undefined })}
+              onChange={(e) =>
+                onChange({
+                  ...config,
+                  lastContactDateStart: e.target.value || undefined,
+                })
+              }
               className="filter-input"
-              max={new Date().toISOString().split('T')[0]}
+              max={new Date().toISOString().split("T")[0]}
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-600 mb-1.5 block">To Date</label>
+            <label className="text-xs font-medium text-slate-600 mb-1.5 block">
+              To Date
+            </label>
             <input
               type="date"
               value={(config.lastContactDateEnd as string) || ""}
-              onChange={(e) => onChange({ ...config, lastContactDateEnd: e.target.value || undefined })}
+              onChange={(e) =>
+                onChange({
+                  ...config,
+                  lastContactDateEnd: e.target.value || undefined,
+                })
+              }
               className="filter-input"
-              max={new Date().toISOString().split('T')[0]}
+              max={new Date().toISOString().split("T")[0]}
             />
           </div>
         </div>
-        {(config.lastContactDateStart && config.lastContactDateEnd) ? (
+        {config.lastContactDateStart && config.lastContactDateEnd ? (
           <div className="mt-2 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
@@ -664,17 +890,23 @@ function EngagementStatusFilterForm({ config, onChange }: FilterFormProps) {
             </svg>
             <span>
               Filtering contacts from{" "}
-              {new Date(String(config.lastContactDateStart)).toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}{" "}
+              {new Date(String(config.lastContactDateStart)).toLocaleDateString(
+                "id-ID",
+                {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                },
+              )}{" "}
               to{" "}
-              {new Date(String(config.lastContactDateEnd)).toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
+              {new Date(String(config.lastContactDateEnd)).toLocaleDateString(
+                "id-ID",
+                {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                },
+              )}
             </span>
           </div>
         ) : null}
@@ -701,23 +933,32 @@ export default function NewSegmentPage() {
 
   // Using custom hooks for data fetching
   const { settings: appSettings } = useSettings();
-  
+
   // Local filter state (must be before useFilterOptions to get selected brands)
   const [filters, setFilters] = useState<FilterModule[]>([]);
-  
+
   // Extract selected brands from filters to filter options
   const selectedBrands = useMemo(() => {
-    const brandFilter = filters.find(f => f.type === "brand");
+    const brandFilter = filters.find((f) => f.type === "brand");
     const brands = (brandFilter?.config.brands as string[]) || [];
     console.log("[NewSegmentPage] Selected brands changed:", brands);
     return brands;
   }, [filters]);
-  
-  console.log("[NewSegmentPage] Calling useFilterOptions with brands:", selectedBrands);
-  const { options: filterOptions } = useFilterOptions(selectedBrands);
+
+  console.log(
+    "[NewSegmentPage] Calling useFilterOptions with brands:",
+    selectedBrands,
+  );
+  const { options: filterOptions, isLoading: filterOptionsLoading } =
+    useFilterOptions(selectedBrands);
   const { createSegment, isCreating } = useCreateSegment();
   const { users } = useUsers();
-  const { preview, isLoading: previewLoading, fetchPreview } = useSegmentPreview();
+  const {
+    preview,
+    isLoading: previewLoading,
+    error: previewError,
+    fetchPreview,
+  } = useSegmentPreview();
   const [isExporting, setIsExporting] = useState(false);
 
   const [segmentName, setSegmentName] = useState("New Segment");
@@ -737,20 +978,33 @@ export default function NewSegmentPage() {
   };
 
   // Filter options with defaults
-  const options: FilterOptionsType = filterOptions || {
-    brands: [],
-    skus: [],
-    provinces: [],
-    cities: [],
-    districts: [],
-    csNames: [],
-    leadSources: [],
-    customerTypes: [],
-    expeditions: [],
-    transactionTypes: [],
-  };
+  const options: FilterOptionsType = useMemo(() => {
+    const base = filterOptions || {
+      brands: [],
+      skus: [],
+      provinces: [],
+      cities: [],
+      districts: [],
+      csNames: [],
+      leadSources: [],
+      customerTypes: [],
+      expeditions: [],
+      transactionTypes: [],
+    };
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    return {
+      brands: sortAZ(base.brands.filter((brand) => ALLOWED_BRANDS.has(brand))),
+      skus: sortAZ(base.skus),
+      provinces: sortAZ(base.provinces),
+      cities: sortAZ(base.cities),
+      districts: sortAZ(base.districts),
+      csNames: sortAZ(base.csNames),
+      leadSources: sortAZ(base.leadSources),
+      customerTypes: sortAZ(base.customerTypes),
+      expeditions: sortAZ(base.expeditions),
+      transactionTypes: sortAZ(base.transactionTypes),
+    };
+  }, [filterOptions]);
 
   // Focus input when editing starts
   useEffect(() => {
@@ -770,21 +1024,12 @@ export default function NewSegmentPage() {
   // ─── Preview (debounced) ────────────────────────────────
 
   const runPreview = useCallback(
-    (currentFilters: FilterModule[]) => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(async () => {
-        if (currentFilters.length === 0) {
-          return;
-        }
-        await fetchPreview(currentFilters);
-      }, 600);
+    async (currentFilters: FilterModule[]) => {
+      if (currentFilters.length === 0) return;
+      await fetchPreview(currentFilters);
     },
-    [fetchPreview]
+    [fetchPreview],
   );
-
-  useEffect(() => {
-    runPreview(filters);
-  }, [filters, runPreview]);
 
   // ─── Filter actions ─────────────────────────────────────
 
@@ -828,10 +1073,10 @@ export default function NewSegmentPage() {
     }
 
     setIsExporting(true);
-    
+
     try {
       console.log(`Starting full export for segment: ${segmentName}`);
-      
+
       // Call API to export ALL matching data (not just preview)
       const response = await fetch("/api/segments/export-preview", {
         method: "POST",
@@ -858,7 +1103,7 @@ export default function NewSegmentPage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${segmentName.replace(/[^a-z0-9]/gi, '_')}_full_export_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `${segmentName.replace(/[^a-z0-9]/gi, "_")}_full_export_${new Date().toISOString().split("T")[0]}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -867,7 +1112,9 @@ export default function NewSegmentPage() {
       console.log(`Export completed successfully`);
     } catch (error) {
       console.error("Export error:", error);
-      alert(`Failed to export CSV: ${error instanceof Error ? error.message : "Unknown error"}`);
+      alert(
+        `Failed to export CSV: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     } finally {
       setIsExporting(false);
     }
@@ -883,7 +1130,7 @@ export default function NewSegmentPage() {
 
     // Find current user from users list
     const me = users?.find(
-      (u: { email: string }) => u.email === session?.user?.email
+      (u: { email: string }) => u.email === session?.user?.email,
     );
 
     if (!me) {
@@ -957,7 +1204,16 @@ export default function NewSegmentPage() {
                   onClick={() => setEditingTitle(true)}
                   className="mt-2 rounded-full p-1 text-slate-300 opacity-0 transition group-hover:opacity-100 hover:bg-slate-100 hover:text-slate-500"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                   </svg>
@@ -980,7 +1236,16 @@ export default function NewSegmentPage() {
                 </>
               ) : (
                 <>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M5 5h11l3 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" />
                     <path d="M8 5v6h6V5" />
                   </svg>
@@ -999,30 +1264,55 @@ export default function NewSegmentPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                 Audience Summary
               </p>
-              <button
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
                 onClick={() => runPreview(filters)}
-                className="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                disabled={previewLoading || filters.length === 0}
+                className="text-xs"
               >
                 {previewLoading ? (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600 inline-block" />
+                  <>
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-600 border-t-transparent" />
+                    Updating...
+                  </>
                 ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M23 4v6h-6M1 20v-6h6" />
-                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-                  </svg>
+                  "Update"
                 )}
-              </button>
+              </Button>
             </div>
+
+            {filters.length === 0 && (
+              <p className="mt-3 text-xs text-slate-400">
+                Tambahkan filter lalu klik Update untuk memuat audience summary.
+              </p>
+            )}
+
+            {previewError && (
+              <p className="mt-3 text-xs text-red-600">
+                Gagal memuat audience summary: {previewError.message}
+              </p>
+            )}
 
             <div className="mt-6">
               <p className="text-4xl font-bold tracking-tight">
                 {matchingCount.toLocaleString("id-ID")}
               </p>
-              <p className="text-sm font-medium text-slate-500">Matching Users</p>
-              
+              <p className="text-sm font-medium text-slate-500">
+                Matching Users
+              </p>
+
               {preview?._meta && !preview._meta.accurate && (
                 <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                     <line x1="12" y1="9" x2="12" y2="13" />
                     <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -1035,7 +1325,9 @@ export default function NewSegmentPage() {
               <div className="mt-5 h-2 w-full rounded-full bg-slate-100">
                 <div
                   className="h-full rounded-full bg-blue-600 transition-all duration-700 ease-out"
-                  style={{ width: `${Math.min(preview?.percentage || 0, 100)}%` }}
+                  style={{
+                    width: `${Math.min(preview?.percentage || 0, 100)}%`,
+                  }}
                 />
               </div>
               <p className="mt-3 text-xs font-medium text-slate-400">
@@ -1051,24 +1343,51 @@ export default function NewSegmentPage() {
                   <div className="mb-4 space-y-1">
                     <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
                       <div className="flex items-center gap-2">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        >
                           <circle cx="12" cy="12" r="10" />
                           <line x1="12" y1="16" x2="12" y2="12" />
                           <line x1="12" y1="8" x2="12.01" y2="8" />
                         </svg>
                         <span>
-                          Preview: Showing <strong>{preview.customers.length}</strong> of <strong>{matchingCount.toLocaleString("id-ID")}</strong> total users
+                          Preview: Showing{" "}
+                          <strong>{preview.customers.length}</strong> of{" "}
+                          <strong>
+                            {matchingCount.toLocaleString("id-ID")}
+                          </strong>{" "}
+                          total users
                         </span>
                       </div>
                     </div>
                     <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs">
                       <div className="flex items-center gap-2 text-amber-700">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        >
                           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                           <polyline points="22 4 12 14.01 9 11.01" />
                         </svg>
                         <span className="font-medium">
-                          {preview.customers.filter((c: CustomerPreview) => c.engagementStatus === "not_contacted").length} out of {preview.customers.length} shown need follow-up
+                          {
+                            preview.customers.filter(
+                              (c: CustomerPreview) =>
+                                c.engagementStatus === "not_contacted",
+                            ).length
+                          }{" "}
+                          out of {preview.customers.length} shown need follow-up
                         </span>
                       </div>
                     </div>
@@ -1083,7 +1402,7 @@ export default function NewSegmentPage() {
                   >
                     View All {matchingCount.toLocaleString("id-ID")} Users
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     className="w-full text-xs font-bold uppercase tracking-widest text-blue-600 py-3 rounded-xl border-blue-200 hover:bg-blue-50"
@@ -1097,7 +1416,15 @@ export default function NewSegmentPage() {
                       </>
                     ) : (
                       <>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-2">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          className="mr-2"
+                        >
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                           <polyline points="7 10 12 15 17 10" />
                           <line x1="12" y1="15" x2="12" y2="3" />
@@ -1114,53 +1441,78 @@ export default function NewSegmentPage() {
                   <span className="flex-1 text-center">Last Contact</span>
                 </div>
                 <div className="space-y-4 text-xs font-medium">
-                  {preview.customers.slice(0, 7).map((c: CustomerPreview, i: number) => {
-                    // Calculate engagement status indicator color (using stable date)
-                    const now = new Date();
-                    let engagementColor = "bg-gray-300"; // default: never contacted
-                    if (c.lastContact) {
-                      const weeksSince = (now.getTime() - new Date(c.lastContact).getTime()) / (1000 * 60 * 60 * 24 * 7);
-                      if (weeksSince < 4) engagementColor = "bg-green-500"; // recent
-                      else if (weeksSince < 8) engagementColor = "bg-yellow-500"; // stale
-                      else engagementColor = "bg-red-500"; // needs attention
-                    }
+                  {preview.customers
+                    .slice(0, 7)
+                    .map((c: CustomerPreview, i: number) => {
+                      // Calculate engagement status indicator color (using stable date)
+                      const now = new Date();
+                      let engagementColor = "bg-gray-300"; // default: never contacted
+                      if (c.lastContact) {
+                        const weeksSince =
+                          (now.getTime() - new Date(c.lastContact).getTime()) /
+                          (1000 * 60 * 60 * 24 * 7);
+                        if (weeksSince < 4)
+                          engagementColor = "bg-green-500"; // recent
+                        else if (weeksSince < 8)
+                          engagementColor = "bg-yellow-500"; // stale
+                        else engagementColor = "bg-red-500"; // needs attention
+                      }
 
-                    return (
-                      <div key={i} className="flex items-center justify-between px-1 hover:bg-slate-50 py-1 rounded-lg transition-colors cursor-default">
-                        <span className="text-slate-800 truncate flex-[2]">
-                          {c.customerName || "—"}
-                        </span>
-                        <span className="text-slate-500 flex-1 text-center font-normal">
-                          {c.lastPurchase ? (() => {
-                            const diff = new Date().getTime() - new Date(c.lastPurchase).getTime();
-                            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                            if (days === 0) return "Today";
-                            if (days < 7) return `${days}d ago`;
-                            return `${Math.floor(days / 7)}w ago`;
-                          })() : "—"}
-                        </span>
-                        <span className="text-slate-500 flex-1 text-center font-normal">
-                          {c.lastContact ? (() => {
-                            const diff = new Date().getTime() - new Date(c.lastContact).getTime();
-                            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                            if (days === 0) return "Today";
-                            if (days < 7) return `${days}d ago`;
-                            return `${Math.floor(days / 7)}w ago`;
-                          })() : (
-                            <span className="text-slate-400">Never</span>
-                          )}
-                        </span>
-                        {preview._meta?.everproEnriched && (
-                          <span className="w-8 flex justify-end items-center gap-1">
-                            <div
-                              className={`h-2 w-2 rounded-full ${engagementColor}`}
-                              title={c.engagementStatus === "contacted" ? "Contacted" : "Not Contacted"}
-                            />
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between px-1 hover:bg-slate-50 py-1 rounded-lg transition-colors cursor-default"
+                        >
+                          <span className="text-slate-800 truncate flex-[2]">
+                            {c.customerName || "—"}
                           </span>
-                        )}
-                      </div>
-                    );
-                  })}
+                          <span className="text-slate-500 flex-1 text-center font-normal">
+                            {c.lastPurchase
+                              ? (() => {
+                                  const diff =
+                                    new Date().getTime() -
+                                    new Date(c.lastPurchase).getTime();
+                                  const days = Math.floor(
+                                    diff / (1000 * 60 * 60 * 24),
+                                  );
+                                  if (days === 0) return "Today";
+                                  if (days < 7) return `${days}d ago`;
+                                  return `${Math.floor(days / 7)}w ago`;
+                                })()
+                              : "—"}
+                          </span>
+                          <span className="text-slate-500 flex-1 text-center font-normal">
+                            {c.lastContact ? (
+                              (() => {
+                                const diff =
+                                  new Date().getTime() -
+                                  new Date(c.lastContact).getTime();
+                                const days = Math.floor(
+                                  diff / (1000 * 60 * 60 * 24),
+                                );
+                                if (days === 0) return "Today";
+                                if (days < 7) return `${days}d ago`;
+                                return `${Math.floor(days / 7)}w ago`;
+                              })()
+                            ) : (
+                              <span className="text-slate-400">Never</span>
+                            )}
+                          </span>
+                          {preview._meta?.everproEnriched && (
+                            <span className="w-8 flex justify-end items-center gap-1">
+                              <div
+                                className={`h-2 w-2 rounded-full ${engagementColor}`}
+                                title={
+                                  c.engagementStatus === "contacted"
+                                    ? "Contacted"
+                                    : "Not Contacted"
+                                }
+                              />
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                 </div>
 
                 <div className="mt-8">
@@ -1191,8 +1543,10 @@ export default function NewSegmentPage() {
             {/* Cost calculation with tooltip */}
             <span className="info-tooltip mt-1 inline-flex items-center gap-1.5 text-xs text-slate-400">
               <span>
-                {matchingCount.toLocaleString("id-ID")} customers × {settings.currencySymbol}{" "}
-                {settings.marketingCostPerCustomer.toLocaleString("id-ID")} / customer
+                {matchingCount.toLocaleString("id-ID")} customers ×{" "}
+                {settings.currencySymbol}{" "}
+                {settings.marketingCostPerCustomer.toLocaleString("id-ID")} /
+                customer
               </span>
               <InfoIcon />
               <span className="info-tooltip-content">
@@ -1205,10 +1559,27 @@ export default function NewSegmentPage() {
     >
       {/* ─── Filter Canvas ─── */}
       <div className="space-y-4 pb-24">
+        {filterOptionsLoading && (
+          <Card className="px-4 py-3">
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+              Memuat opsi filter...
+            </div>
+          </Card>
+        )}
+
         {/* Starting capsule */}
         <div className="flex justify-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
               <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
             </svg>
             Filter Builder
@@ -1229,14 +1600,17 @@ export default function NewSegmentPage() {
                   <span className="tooltip-wrapper">
                     <button
                       onClick={() => toggleConnector(filter.id)}
-                      className={`connector-badge ${filter.connector === "AND"
+                      className={`connector-badge ${
+                        filter.connector === "AND"
                           ? "connector-badge--and"
                           : "connector-badge--or"
-                        }`}
+                      }`}
                     >
                       {filter.connector}
                     </button>
-                    <span className="tooltip-label">Klik untuk toggle AND/OR</span>
+                    <span className="tooltip-label">
+                      Klik untuk toggle AND/OR
+                    </span>
                   </span>
                 </div>
               )}
@@ -1245,12 +1619,16 @@ export default function NewSegmentPage() {
               <Card className="px-6 py-5 transition-shadow hover:shadow-lg">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`grid h-10 w-10 place-items-center rounded-2xl ${def.iconBg} ${def.iconColor}`}>
+                    <div
+                      className={`grid h-10 w-10 place-items-center rounded-2xl ${def.iconBg} ${def.iconColor}`}
+                    >
                       <IconComp />
                     </div>
                     <div>
                       <p className="text-base font-semibold">{def.label}</p>
-                      <p className="text-xs text-slate-400">{def.description}</p>
+                      <p className="text-xs text-slate-400">
+                        {def.description}
+                      </p>
                     </div>
                   </div>
                   <button
@@ -1367,7 +1745,15 @@ export default function NewSegmentPage() {
           <Card className="border-dashed px-6 py-16">
             <div className="flex flex-col items-center gap-4 text-center">
               <div className="grid h-16 w-16 place-items-center rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-500">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                >
                   <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
                 </svg>
               </div>
@@ -1426,12 +1812,18 @@ export default function NewSegmentPage() {
                       onClick={() => addFilter(type)}
                       className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-slate-50"
                     >
-                      <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${def.iconBg} ${def.iconColor}`}>
+                      <div
+                        className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${def.iconBg} ${def.iconColor}`}
+                      >
                         <IconComp />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-700">{def.label}</p>
-                        <p className="text-xs text-slate-400">{def.description}</p>
+                        <p className="text-sm font-medium text-slate-700">
+                          {def.label}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {def.description}
+                        </p>
                       </div>
                     </button>
                   );
@@ -1455,15 +1847,29 @@ export default function NewSegmentPage() {
             {preview._meta?.everproEnriched && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg bg-green-50 px-4 py-3">
-                  <p className="text-xs font-medium text-green-600 uppercase tracking-wider">Contacted</p>
+                  <p className="text-xs font-medium text-green-600 uppercase tracking-wider">
+                    Contacted
+                  </p>
                   <p className="text-2xl font-bold text-green-700 mt-1">
-                    {preview.customers.filter((c: CustomerPreview) => c.engagementStatus === "contacted").length}
+                    {
+                      preview.customers.filter(
+                        (c: CustomerPreview) =>
+                          c.engagementStatus === "contacted",
+                      ).length
+                    }
                   </p>
                 </div>
                 <div className="rounded-lg bg-amber-50 px-4 py-3">
-                  <p className="text-xs font-medium text-amber-600 uppercase tracking-wider">Need Follow-up</p>
+                  <p className="text-xs font-medium text-amber-600 uppercase tracking-wider">
+                    Need Follow-up
+                  </p>
                   <p className="text-2xl font-bold text-amber-700 mt-1">
-                    {preview.customers.filter((c: CustomerPreview) => c.engagementStatus === "not_contacted").length}
+                    {
+                      preview.customers.filter(
+                        (c: CustomerPreview) =>
+                          c.engagementStatus === "not_contacted",
+                      ).length
+                    }
                   </p>
                 </div>
               </div>
@@ -1473,15 +1879,28 @@ export default function NewSegmentPage() {
             {preview.customers.length < matchingCount && (
               <div className="rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-700">
                 <div className="flex items-start gap-2">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 shrink-0">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="mt-0.5 shrink-0"
+                  >
                     <circle cx="12" cy="12" r="10" />
                     <line x1="12" y1="16" x2="12" y2="12" />
                     <line x1="12" y1="8" x2="12.01" y2="8" />
                   </svg>
                   <span>
-                    <strong>Preview Mode:</strong> Showing sample of <strong>{preview.customers.length}</strong> out of <strong>{matchingCount.toLocaleString("id-ID")}</strong> matching customers. 
-                    <br/>
-                    Click <strong>&quot;Export All Excel&quot;</strong> below to download all {matchingCount.toLocaleString("id-ID")} customers.
+                    <strong>Preview Mode:</strong> Showing sample of{" "}
+                    <strong>{preview.customers.length}</strong> out of{" "}
+                    <strong>{matchingCount.toLocaleString("id-ID")}</strong>{" "}
+                    matching customers.
+                    <br />
+                    Click <strong>&quot;Export All Excel&quot;</strong> below to
+                    download all {matchingCount.toLocaleString("id-ID")}{" "}
+                    customers.
                   </span>
                 </div>
               </div>
@@ -1504,88 +1923,121 @@ export default function NewSegmentPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {preview.customers.map((customer: CustomerPreview, index: number) => {
-                    // Calculate engagement status indicator color
-                    const now = new Date();
-                    let engagementColor = "bg-gray-300";
-                    let engagementLabel = "Never Contacted";
-                    if (customer.lastContact) {
-                      const weeksSince = (now.getTime() - new Date(customer.lastContact).getTime()) / (1000 * 60 * 60 * 24 * 7);
-                      if (weeksSince < 4) {
-                        engagementColor = "bg-green-500";
-                        engagementLabel = "Recent";
-                      } else if (weeksSince < 8) {
-                        engagementColor = "bg-yellow-500";
-                        engagementLabel = "Stale";
-                      } else {
-                        engagementColor = "bg-red-500";
-                        engagementLabel = "Needs Attention";
+                  {preview.customers.map(
+                    (customer: CustomerPreview, index: number) => {
+                      // Calculate engagement status indicator color
+                      const now = new Date();
+                      let engagementColor = "bg-gray-300";
+                      let engagementLabel = "Never Contacted";
+                      if (customer.lastContact) {
+                        const weeksSince =
+                          (now.getTime() -
+                            new Date(customer.lastContact).getTime()) /
+                          (1000 * 60 * 60 * 24 * 7);
+                        if (weeksSince < 4) {
+                          engagementColor = "bg-green-500";
+                          engagementLabel = "Recent";
+                        } else if (weeksSince < 8) {
+                          engagementColor = "bg-yellow-500";
+                          engagementLabel = "Stale";
+                        } else {
+                          engagementColor = "bg-red-500";
+                          engagementLabel = "Needs Attention";
+                        }
                       }
-                    }
 
-                    const formatTimeAgo = (dateStr: string) => {
-                      const diff = new Date().getTime() - new Date(dateStr).getTime();
-                      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                      if (days === 0) return "Today";
-                      if (days === 1) return "Yesterday";
-                      if (days < 7) return `${days}d ago`;
-                      if (days < 30) return `${Math.floor(days / 7)}w ago`;
-                      if (days < 365) return `${Math.floor(days / 30)}mo ago`;
-                      return `${Math.floor(days / 365)}y ago`;
-                    };
+                      const formatTimeAgo = (dateStr: string) => {
+                        const diff =
+                          new Date().getTime() - new Date(dateStr).getTime();
+                        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                        if (days === 0) return "Today";
+                        if (days === 1) return "Yesterday";
+                        if (days < 7) return `${days}d ago`;
+                        if (days < 30) return `${Math.floor(days / 7)}w ago`;
+                        if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+                        return `${Math.floor(days / 365)}y ago`;
+                      };
 
-                    const formatFullDate = (dateStr: string) => {
-                      return new Date(dateStr).toLocaleDateString("id-ID", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit"
-                      });
-                    };
+                      const formatFullDate = (dateStr: string) => {
+                        return new Date(dateStr).toLocaleDateString("id-ID", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        });
+                      };
 
-                    return (
-                      <tr key={index} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-3 text-slate-500 font-medium">{index + 1}</td>
-                        <td className="px-4 py-3 font-medium text-slate-900">
-                          {customer.customerName || "—"}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600 font-mono text-xs">
-                          {customer.phoneNumber || "—"}
-                        </td>
-                        <td className="px-4 py-3 text-center text-slate-600" title={customer.lastPurchase ? formatFullDate(customer.lastPurchase) : undefined}>
-                          {customer.lastPurchase ? formatTimeAgo(customer.lastPurchase) : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-center text-slate-600" title={customer.lastContact ? formatFullDate(customer.lastContact) : undefined}>
-                          {customer.lastContact ? formatTimeAgo(customer.lastContact) : (
-                            <span className="text-slate-400">Never</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                            customer.status === "process" 
-                              ? "bg-blue-50 text-blue-700"
-                              : customer.status === "pending"
-                              ? "bg-amber-50 text-amber-700"
-                              : "bg-slate-100 text-slate-600"
-                          }`}>
-                            {customer.status || "unknown"}
-                          </span>
-                        </td>
-                        {preview._meta?.everproEnriched && (
-                          <td className="px-4 py-3 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <div
-                                className={`h-2.5 w-2.5 rounded-full ${engagementColor}`}
-                                title={engagementLabel}
-                              />
-                              <span className="text-xs text-slate-500">{engagementLabel}</span>
-                            </div>
+                      return (
+                        <tr
+                          key={index}
+                          className="hover:bg-slate-50 transition-colors"
+                        >
+                          <td className="px-4 py-3 text-slate-500 font-medium">
+                            {index + 1}
                           </td>
-                        )}
-                      </tr>
-                    );
-                  })}
+                          <td className="px-4 py-3 font-medium text-slate-900">
+                            {customer.customerName || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-slate-600 font-mono text-xs">
+                            {customer.phoneNumber || "—"}
+                          </td>
+                          <td
+                            className="px-4 py-3 text-center text-slate-600"
+                            title={
+                              customer.lastPurchase
+                                ? formatFullDate(customer.lastPurchase)
+                                : undefined
+                            }
+                          >
+                            {customer.lastPurchase
+                              ? formatTimeAgo(customer.lastPurchase)
+                              : "—"}
+                          </td>
+                          <td
+                            className="px-4 py-3 text-center text-slate-600"
+                            title={
+                              customer.lastContact
+                                ? formatFullDate(customer.lastContact)
+                                : undefined
+                            }
+                          >
+                            {customer.lastContact ? (
+                              formatTimeAgo(customer.lastContact)
+                            ) : (
+                              <span className="text-slate-400">Never</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span
+                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                customer.status === "process"
+                                  ? "bg-blue-50 text-blue-700"
+                                  : customer.status === "pending"
+                                    ? "bg-amber-50 text-amber-700"
+                                    : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {customer.status || "unknown"}
+                            </span>
+                          </td>
+                          {preview._meta?.everproEnriched && (
+                            <td className="px-4 py-3 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <div
+                                  className={`h-2.5 w-2.5 rounded-full ${engagementColor}`}
+                                  title={engagementLabel}
+                                />
+                                <span className="text-xs text-slate-500">
+                                  {engagementLabel}
+                                </span>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    },
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1593,7 +2045,8 @@ export default function NewSegmentPage() {
             {/* Export actions */}
             <div className="flex items-center justify-between pt-2">
               <p className="text-xs text-slate-500">
-                Export all {matchingCount.toLocaleString("id-ID")} matching customers to Excel
+                Export all {matchingCount.toLocaleString("id-ID")} matching
+                customers to Excel
               </p>
               <Button
                 variant="outline"
@@ -1609,7 +2062,15 @@ export default function NewSegmentPage() {
                   </>
                 ) : (
                   <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1.5">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="mr-1.5"
+                    >
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                       <polyline points="7 10 12 15 17 10" />
                       <line x1="12" y1="15" x2="12" y2="3" />
