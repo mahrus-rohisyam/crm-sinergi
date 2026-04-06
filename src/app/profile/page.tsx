@@ -3,26 +3,28 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 
 export default function ProfilePage() {
   const { data: session } = useSession();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
-  const [profileMsg, setProfileMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [pwMsg, setPwMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [profileMsg, setProfileMsg] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [pwMsg, setPwMsg] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
-  useEffect(() => {
-    if (session?.user) {
-      setName(session.user.name || "");
-      setEmail(session.user.email || "");
-    }
-  }, [session]);
+  const effectiveName = name ?? session?.user?.name ?? "";
+  const effectiveEmail = email ?? session?.user?.email ?? "";
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +34,10 @@ export default function ProfilePage() {
     try {
       const userId = (session?.user as { id?: string })?.id;
       if (!userId) {
-        setProfileMsg({ type: "error", text: "Session tidak valid. Silakan login ulang." });
+        setProfileMsg({
+          type: "error",
+          text: "Session tidak valid. Silakan login ulang.",
+        });
         setSaving(false);
         return;
       }
@@ -40,14 +45,17 @@ export default function ProfilePage() {
       const res = await fetch(`/api/users/${userId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({ name: effectiveName, email: effectiveEmail }),
       });
 
       if (res.ok) {
         setProfileMsg({ type: "success", text: "Profil berhasil diperbarui." });
       } else {
         const data = await res.json();
-        setProfileMsg({ type: "error", text: data.error || "Gagal menyimpan." });
+        setProfileMsg({
+          type: "error",
+          text: data.error || "Gagal menyimpan.",
+        });
       }
     } catch {
       setProfileMsg({ type: "error", text: "Network error." });
@@ -90,7 +98,10 @@ export default function ProfilePage() {
         setNewPassword("");
         setConfirmPassword("");
       } else {
-        setPwMsg({ type: "error", text: data.error || "Gagal mengubah password." });
+        setPwMsg({
+          type: "error",
+          text: data.error || "Gagal mengubah password.",
+        });
       }
     } catch {
       setPwMsg({ type: "error", text: "Network error." });
@@ -99,8 +110,8 @@ export default function ProfilePage() {
     setSaving(false);
   };
 
-  const initials = name
-    ? name
+  const initials = effectiveName
+    ? effectiveName
         .split(" ")
         .map((n) => n[0])
         .join("")
@@ -131,8 +142,10 @@ export default function ProfilePage() {
               {initials}
             </div>
             <div>
-              <p className="text-lg font-semibold text-slate-800">{name || "User"}</p>
-              <p className="text-sm text-slate-500">{email}</p>
+              <p className="text-lg font-semibold text-slate-800">
+                {effectiveName || "User"}
+              </p>
+              <p className="text-sm text-slate-500">{effectiveEmail}</p>
             </div>
           </div>
 
@@ -150,19 +163,23 @@ export default function ProfilePage() {
 
           <form onSubmit={handleUpdateProfile} className="mt-6 space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Nama Lengkap</label>
+              <label className="text-sm font-medium text-slate-700">
+                Nama Lengkap
+              </label>
               <input
                 type="text"
-                value={name}
+                value={effectiveName}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Email</label>
+              <label className="text-sm font-medium text-slate-700">
+                Email
+              </label>
               <input
                 type="email"
-                value={email}
+                value={effectiveEmail}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
@@ -194,7 +211,9 @@ export default function ProfilePage() {
 
           <form onSubmit={handleChangePassword} className="mt-5 space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Password Saat Ini</label>
+              <label className="text-sm font-medium text-slate-700">
+                Password Saat Ini
+              </label>
               <input
                 type="password"
                 value={currentPassword}
@@ -204,7 +223,9 @@ export default function ProfilePage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Password Baru</label>
+              <label className="text-sm font-medium text-slate-700">
+                Password Baru
+              </label>
               <input
                 type="password"
                 value={newPassword}
@@ -214,7 +235,9 @@ export default function ProfilePage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Konfirmasi Password Baru</label>
+              <label className="text-sm font-medium text-slate-700">
+                Konfirmasi Password Baru
+              </label>
               <input
                 type="password"
                 value={confirmPassword}

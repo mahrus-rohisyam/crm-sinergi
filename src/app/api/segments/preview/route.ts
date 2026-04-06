@@ -54,9 +54,7 @@ async function enrichWithEverproData(
 
   // Get all unique phone variants to query
   const allVariants = Array.from(
-    new Set(
-      Array.from(phoneVariantsMap.values()).flat(),
-    ),
+    new Set(Array.from(phoneVariantsMap.values()).flat()),
   );
 
   // Query Everpro contacts by phone number (match any variant)
@@ -69,14 +67,12 @@ async function enrichWithEverproData(
   });
 
   // Create lookup map (phone variant -> Everpro contact)
-  const everproMap = new Map(
-    everproContacts.map((c) => [c.phoneNumber, c]),
-  );
+  const everproMap = new Map(everproContacts.map((c) => [c.phoneNumber, c]));
 
   // Enrich each customer
   return customers.map((customer) => {
     const variants = phoneVariantsMap.get(customer.phoneNumber) || [];
-    
+
     // Try to find Everpro contact using any variant
     let everproContact = null;
     for (const variant of variants) {
@@ -119,7 +115,9 @@ function matchesEngagementStatusFilter(
   config: Record<string, unknown>,
 ): boolean {
   // Check blast status filter
-  const showOnlyNotContacted = config.showOnlyNotContacted as boolean | undefined;
+  const showOnlyNotContacted = config.showOnlyNotContacted as
+    | boolean
+    | undefined;
   if (showOnlyNotContacted && customer.engagementStatus !== "not_contacted") {
     return false;
   }
@@ -130,14 +128,14 @@ function matchesEngagementStatusFilter(
 
   if ((dateStart || dateEnd) && customer.lastContact) {
     const lastContactDate = new Date(customer.lastContact);
-    
+
     // Check if last contact is within the specified date range
     if (dateStart) {
       const startDate = new Date(dateStart);
       startDate.setHours(0, 0, 0, 0); // Start of day
       if (lastContactDate < startDate) return false;
     }
-    
+
     if (dateEnd) {
       const endDate = new Date(dateEnd);
       endDate.setHours(23, 59, 59, 999); // End of day
@@ -171,9 +169,8 @@ function matchesFilterCondition(
     case "transaction": {
       const skus = c.skus as string[] | undefined;
       if (skus && skus.length > 0) {
-        const matches = skus.some(
-          (sku) =>
-            order.product_summary?.toLowerCase().includes(sku.toLowerCase()),
+        const matches = skus.some((sku) =>
+          order.product_summary?.toLowerCase().includes(sku.toLowerCase()),
         );
         if (!matches) return false;
       }
@@ -181,19 +178,36 @@ function matchesFilterCondition(
       if (c.maxQty && order.qty > Number(c.maxQty)) return false;
       if (c.minAmount && order.amount < Number(c.minAmount)) return false;
       if (c.maxAmount && order.amount > Number(c.maxAmount)) return false;
+
+      const paymentMethod = order.payment_method?.toLowerCase() || "";
+      const paymentStatus = order.payment_status?.toLowerCase() || "";
+      const normalizedTransactionType =
+        order.is_cod || paymentMethod === "cod" || paymentStatus === "cod"
+          ? "COD"
+          : "Transfer";
+
       if (
         c.transactionType &&
-        order.payment_method?.toLowerCase() !==
+        normalizedTransactionType.toLowerCase() !==
           (c.transactionType as string).toLowerCase()
-      )
+      ) {
         return false;
+      }
+
+      const expeditions =
+        (c.expeditions as string[] | undefined) ||
+        (c.expedition ? [String(c.expedition)] : undefined);
+
       if (
-        c.expedition &&
-        !order.courier
-          ?.toLowerCase()
-          .includes((c.expedition as string).toLowerCase())
-      )
+        expeditions &&
+        expeditions.length > 0 &&
+        !expeditions.some((exp) =>
+          order.courier?.toLowerCase().includes(exp.toLowerCase()),
+        )
+      ) {
         return false;
+      }
+
       return true;
     }
     case "timeframe": {
@@ -298,10 +312,7 @@ function matchesFilterCondition(
 /**
  * Check if order matches all filters (respecting AND/OR connectors)
  */
-function matchesAllFilters(
-  order: WMSOrder,
-  filters: FilterModule[],
-): boolean {
+function matchesAllFilters(order: WMSOrder, filters: FilterModule[]): boolean {
   if (filters.length === 0) return true;
 
   let result = matchesFilterCondition(order, filters[0]);
@@ -377,7 +388,9 @@ export async function POST(req: Request) {
       let enrichedCustomers = await enrichWithEverproData(uniqueCustomers);
 
       // Apply engagement_status filter if present
-      const engagementFilter = filters.find((f) => f.type === "engagement_status");
+      const engagementFilter = filters.find(
+        (f) => f.type === "engagement_status",
+      );
       if (engagementFilter) {
         enrichedCustomers = enrichedCustomers.filter((customer) =>
           matchesEngagementStatusFilter(customer, engagementFilter.config),
@@ -448,7 +461,9 @@ export async function POST(req: Request) {
     let enrichedCustomers = await enrichWithEverproData(uniqueCustomers);
 
     // Apply engagement_status filter if present
-    const engagementFilter = filters.find((f) => f.type === "engagement_status");
+    const engagementFilter = filters.find(
+      (f) => f.type === "engagement_status",
+    );
     if (engagementFilter) {
       enrichedCustomers = enrichedCustomers.filter((customer) =>
         matchesEngagementStatusFilter(customer, engagementFilter.config),
@@ -488,7 +503,8 @@ export async function POST(req: Request) {
         sampleSize,
         matchingInSample,
         baseFilteredCount, // Count with status & WMS-level filters applied
-        samplePercentage: Math.round((sampleSize / baseFilteredCount) * 10000) / 100,
+        samplePercentage:
+          Math.round((sampleSize / baseFilteredCount) * 10000) / 100,
         everproEnriched: true,
       },
     });

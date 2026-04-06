@@ -39,26 +39,24 @@ export default function OrdersExportPage() {
                 Select Brand
               </label>
               <div className="flex gap-4">
-                {(["Amura", "Reglow", "Purela"] as ExportBrand[]).map(
-                  (brand) => (
-                    <label
-                      key={brand}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <input
-                        type="radio"
-                        name="brand"
-                        value={brand}
-                        checked={selectedBrand === brand}
-                        onChange={(e) =>
-                          setSelectedBrand(e.target.value as ExportBrand)
-                        }
-                        className="h-4 w-4 text-blue-600"
-                      />
-                      <span className="text-sm text-gray-700">{brand}</span>
-                    </label>
-                  ),
-                )}
+                {(["Amura", "Reglow"] as ExportBrand[]).map((brand) => (
+                  <label
+                    key={brand}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="brand"
+                      value={brand}
+                      checked={selectedBrand === brand}
+                      onChange={(e) =>
+                        setSelectedBrand(e.target.value as ExportBrand)
+                      }
+                      className="h-4 w-4 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700">{brand}</span>
+                  </label>
+                ))}
               </div>
             </div>
 
@@ -174,9 +172,7 @@ export default function OrdersExportPage() {
               Optionally filter by start date and order status to narrow down
               results
             </li>
-            <li>
-              The system will fetch all matching orders from the WMS API
-            </li>
+            <li>The system will fetch all matching orders from the WMS API</li>
             <li>
               Orders will be exported to an Excel file using the template for
               the selected brand

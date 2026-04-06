@@ -89,8 +89,9 @@ export async function fetchWMSOrders(
   if (params.start_date) url.searchParams.set("start_date", params.start_date);
   if (params.status) url.searchParams.set("status", params.status);
   if (params.search) url.searchParams.set("search", params.search);
-  if (params.client_id) url.searchParams.set("client_id", String(params.client_id));
-  console.log(url, 'url')
+  if (params.client_id)
+    url.searchParams.set("client_id", String(params.client_id));
+  console.log(url, "url");
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -165,9 +166,7 @@ export async function fetchAllWMSOrders(
  * Extract distinct values from WMS orders for filter options
  * Fetches multiple pages to get comprehensive distinct values
  */
-export async function getDistinctFilterValues(
-  maxPages: number = 10,
-): Promise<{
+export async function getDistinctFilterValues(maxPages: number = 10): Promise<{
   brands: string[];
   provinces: string[];
   cities: string[];
@@ -200,7 +199,13 @@ export async function getDistinctFilterValues(
     if (order.ads_platform_name) leadSourcesSet.add(order.ads_platform_name);
     if (order.customer_type) customerTypesSet.add(order.customer_type);
     if (order.courier) expeditionsSet.add(order.courier);
-    if (order.payment_method) transactionTypesSet.add(order.payment_method);
+    const paymentMethod = order.payment_method?.toLowerCase() || "";
+    const paymentStatus = order.payment_status?.toLowerCase() || "";
+    const transactionType =
+      order.is_cod || paymentMethod === "cod" || paymentStatus === "cod"
+        ? "COD"
+        : "Transfer";
+    transactionTypesSet.add(transactionType);
   }
 
   // Convert Sets to sorted arrays
@@ -226,9 +231,9 @@ export async function getDistinctFilterValues(
  */
 export function getBrandClientId(brandName: string): number | null {
   const brandMap: Record<string, number> = {
-    "Reglow": 1,   // 15,305 orders
-    "Amura": 2,    // primary brand
-    "Purela": 3,   // 89 orders
+    Reglow: 1, // 15,305 orders
+    Amura: 2, // primary brand
+    Purela: 3, // 89 orders
   };
 
   return brandMap[brandName] || null;
@@ -295,7 +300,9 @@ export function buildWMSQueryFromFilters(
 ): WMSQueryParams {
   // Check if transaction filter has an orderStatus selected
   const transactionFilter = filters.find((f) => f.type === "transaction");
-  const orderStatus = transactionFilter?.config.orderStatus as string | undefined;
+  const orderStatus = transactionFilter?.config.orderStatus as
+    | string
+    | undefined;
 
   const params: WMSQueryParams = {};
 
@@ -409,9 +416,7 @@ export type WMSClientsResponse = {
  * Fetch list of clients/brands from WMS API
  * Uses the /v1/open/clients/list endpoint
  */
-export async function fetchWMSClients(
-  retries = 3,
-): Promise<WMSClient[]> {
+export async function fetchWMSClients(retries = 3): Promise<WMSClient[]> {
   const apiKey = process.env.WMS_API_KEY;
   const baseUrl =
     process.env.WMS_API_BASE_URL || "https://wms-api.sinergisuperapp.com";
@@ -661,8 +666,10 @@ export async function fetchWMSProducts(
   }
 
   const url = new URL(`${baseUrl}/v1/open/products/list`);
-  if (params.clientId) url.searchParams.set("client_id", String(params.clientId));
-  if (params.bundle !== undefined) url.searchParams.set("bundle", String(params.bundle));
+  if (params.clientId)
+    url.searchParams.set("client_id", String(params.clientId));
+  if (params.bundle !== undefined)
+    url.searchParams.set("bundle", String(params.bundle));
   if (params.status) url.searchParams.set("status", params.status);
   if (params.page) url.searchParams.set("page", String(params.page));
   if (params.length) url.searchParams.set("length", String(params.length));
