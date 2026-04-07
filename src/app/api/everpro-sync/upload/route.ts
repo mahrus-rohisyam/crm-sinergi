@@ -16,18 +16,13 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const fileName = `${Date.now()}-${file.name}`;
-    const publicDir = path.join(process.cwd(), "public", "everpro-sync");
-    const filePath = path.join(publicDir, fileName);
 
-    // Ensure directory exists
-    try {
+    // Optionally write file to disk (only when EVERPRO_SAVE_FILE=true)
+    if (process.env.EVERPRO_SAVE_FILE === "true") {
+      const publicDir = path.join(process.cwd(), "public", "everpro-sync");
       await mkdir(publicDir, { recursive: true });
-    } catch (e) {
-      // Directory might already exist, that's fine
+      await writeFile(path.join(publicDir, fileName), buffer);
     }
-
-    // Save file to disk
-    await writeFile(filePath, buffer);
 
     // Parse the file to extract contacts
     const parseResult = parseEverproFile(buffer, file.name);
@@ -57,12 +52,12 @@ export async function POST(req: NextRequest) {
     // Use transaction for consistency
     const upsertResults = await prisma.$transaction(async (tx) => {
       const results = [];
-      
+
       // Process in batches of 100 for better performance
       const batchSize = 100;
       for (let i = 0; i < parseResult.contacts.length; i += batchSize) {
         const batch = parseResult.contacts.slice(i, i + batchSize);
-        
+
         for (const contact of batch) {
           const result = await tx.everproContact.upsert({
             where: { phoneNumber: contact.phoneNumber },
@@ -82,7 +77,7 @@ export async function POST(req: NextRequest) {
           results.push(result);
         }
       }
-      
+
       return results;
     });
 

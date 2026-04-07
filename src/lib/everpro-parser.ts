@@ -98,11 +98,7 @@ export function parseEverproDate(dateValue: unknown): Date | null {
     const ddmmyyyyMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (ddmmyyyyMatch) {
       const [, day, month, year] = ddmmyyyyMatch;
-      const date = new Date(
-        parseInt(year),
-        parseInt(month) - 1,
-        parseInt(day),
-      );
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       if (!isNaN(date.getTime())) return date;
     }
 
@@ -141,10 +137,12 @@ export function parseEverproCSV(csvContent: string): ParseResult {
     // Parse header
     const header = lines[0].split(",").map((h) => h.trim().toLowerCase());
     const phoneIndex = header.findIndex((h) =>
-      ["no_telp", "no_hp", "phone", "hp", "nomor"].includes(h),
+      ["no_telp", "no_hp", "phone", "phone_number", "hp", "nomor"].includes(h),
     );
     const nameIndex = header.findIndex((h) =>
-      ["nama_customer", "nama", "name", "customer"].includes(h),
+      ["nama_customer", "customer_name", "nama", "name", "customer"].includes(
+        h,
+      ),
     );
     const dateIndex = header.findIndex((h) =>
       [
@@ -258,10 +256,10 @@ export function parseEverproExcel(buffer: Buffer): ParseResult {
     const columns = Object.keys(firstRow);
 
     const phoneColumn = columns.find((c) =>
-      /no_?telp|no_?hp|phone|hp|nomor/i.test(c),
+      /no_?telp|no_?hp|phone_?number|phone|hp|nomor/i.test(c),
     );
     const nameColumn = columns.find((c) =>
-      /nama_?customer|nama|name|customer/i.test(c),
+      /nama_?customer|customer_?name|nama|name|customer/i.test(c),
     );
     const dateColumn = columns.find((c) =>
       /tanggal_?terakhir_?blast|terakhir_?blast|last_?blast|tanggal/i.test(c),
