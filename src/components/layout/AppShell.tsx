@@ -13,7 +13,13 @@ const navItems = [
     href: "/",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     ),
   },
@@ -22,8 +28,20 @@ const navItems = [
     href: "/everpro-sync",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <path d="M4 4v5h5M20 20v-5h-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M20.5 9A9 9 0 0 0 5.6 5.6L4 4m0 0v5M3.5 15a9 9 0 0 0 14.9 3.4L20 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d="M4 4v5h5M20 20v-5h-5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M20.5 9A9 9 0 0 0 5.6 5.6L4 4m0 0v5M3.5 15a9 9 0 0 0 14.9 3.4L20 20"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     ),
   },
@@ -32,9 +50,19 @@ const navItems = [
     href: "/users",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path
+          d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
         <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path
+          d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
       </svg>
     ),
   },
@@ -44,7 +72,11 @@ const navItems = [
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" strokeWidth="1.5" />
+        <path
+          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
       </svg>
     ),
   },
@@ -57,7 +89,12 @@ type AppShellProps = {
   rightAside?: ReactNode;
 };
 
-export function AppShell({ active, header, children, rightAside }: AppShellProps) {
+export function AppShell({
+  active,
+  header,
+  children,
+  rightAside,
+}: AppShellProps) {
   const { data: session } = useSession();
   const { settings, isLoading } = useSettings();
 
@@ -67,7 +104,9 @@ export function AppShell({ active, header, children, rightAside }: AppShellProps
 
     // Update favicon
     if (settings.faviconUrl) {
-      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
+      let link = document.querySelector(
+        "link[rel~='icon']",
+      ) as HTMLLinkElement | null;
       if (!link) {
         link = document.createElement("link");
         link.rel = "icon";
@@ -112,8 +151,17 @@ export function AppShell({ active, header, children, rightAside }: AppShellProps
             ) : (
               <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-600 text-white">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 3.5l6.5 3.6v7.2L12 18.9 5.5 14.3V7.1L12 3.5z" stroke="white" strokeWidth="1.5" />
-                  <path d="M8 9.2l4 2.1 4-2.1M12 11.3v4.6" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                  <path
+                    d="M12 3.5l6.5 3.6v7.2L12 18.9 5.5 14.3V7.1L12 3.5z"
+                    stroke="white"
+                    strokeWidth="1.5"
+                  />
+                  <path
+                    d="M8 9.2l4 2.1 4-2.1M12 11.3v4.6"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
                 </svg>
               </div>
             )}
@@ -174,7 +222,16 @@ export function AppShell({ active, header, children, rightAside }: AppShellProps
                 type="submit"
                 className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-red-50 hover:text-red-600"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                   <polyline points="16,17 21,12 16,7" />
                   <line x1="21" y1="12" x2="9" y2="12" />
@@ -192,7 +249,11 @@ export function AppShell({ active, header, children, rightAside }: AppShellProps
               {header}
               {children}
             </main>
-            {rightAside ? <aside className="w-80 space-y-6">{rightAside}</aside> : null}
+            {rightAside ? (
+              <aside className="w-80 shrink-0 self-start sticky top-6 space-y-6 max-h-[calc(100vh-3rem)] overflow-y-auto">
+                {rightAside}
+              </aside>
+            ) : null}
           </div>
         </div>
       </div>
