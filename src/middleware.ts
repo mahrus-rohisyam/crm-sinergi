@@ -47,14 +47,12 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
-    "/login",
-    "/segment/:path*",
-    "/overview/:path*",
-    "/everpro-sync/:path*",
-    "/users/:path*",
-    "/profile/:path*",
-    "/settings/:path*",
-    "/campaign/:path*",
+    /*
+     * Match all paths EXCEPT:
+     * - _next (static files, chunks, etc.)
+     * - API routes for auth
+     * - Static files in /public (images, xlsx, etc.)
+     */
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:xlsx|xls|csv|png|jpg|jpeg|gif|svg|ico|pdf|zip)$).*)",
   ],
 };
